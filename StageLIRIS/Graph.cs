@@ -19,6 +19,31 @@ public class Graph
         }
         nbVert = nbVertices;
     }
+
+    public void writeMat()
+    {
+        for (int i = 0; i < nbVert; i++)
+        {
+            for (int j = 0; j < nbVert; j++)
+            {
+                Console.Write(mat[i, j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+
+    public void writeVois()
+    {
+        for (int i = 0; i < nbVert; i++)
+        {
+            Console.Write(i + ": [ ");
+            for (int j = 0; j < vois[i].Count; j++)
+            {
+                Console.Write(vois[i][j] + " ");
+            }
+            Console.WriteLine("]");
+        }
+    }
     
     public void addEdge(int from, int to)
     {
