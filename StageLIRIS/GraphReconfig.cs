@@ -3,24 +3,24 @@ namespace StageLIRIS;
 public class GraphReconfig
 {
 
-    public Graph graph;
-    public int k;
-    public List<IndepSet> allIS;
+    public readonly Graph Graph;
+    public readonly int K;
+    public List<IndepSet> AllIs;
 
     public GraphReconfig(Graph graph, int k)
     {
-        this.graph = graph;
-        this.k = k;
+        this.Graph = graph;
+        this.K = k;
     }
 
     public void CalcAllISRec(int from, IndepSet currSet)
     {
-        if (currSet.currSize == k)
+        if (currSet.CurrSize == K)
         {
             // On ajoute ce IS à la liste
-            allIS.Add(currSet.Clone());
+            AllIs.Add(currSet.Clone());
         }
-        else if(from < graph.nbVert) // Si from >= nbVert: on a pas trouvé de IS de taille K
+        else if(from < Graph.NbVert) // Si from >= nbVert: on a pas trouvé de IS de taille K
         {
             // On continue la construction
             // On n'ajoute pas ce sommet à l'IS
@@ -38,9 +38,9 @@ public class GraphReconfig
     
     public List<IndepSet> CalcAllIS()
     {
-        allIS = new List<IndepSet>();
-        CalcAllISRec(0, new IndepSet(graph, k));
-        return allIS;
+        AllIs = new List<IndepSet>();
+        CalcAllISRec(0, new IndepSet(Graph, K));
+        return AllIs;
     }
 
     public int[] FindDiffBtwIS(IndepSet set1, IndepSet set2)
@@ -51,19 +51,19 @@ public class GraphReconfig
         bool sndDiffFound = false;
         int ind1 = -1;
         int ind2 = -1;
-        for (int i = 0; i < set1.graph.nbVert; i++)
+        for (int i = 0; i < set1.Graph.NbVert; i++)
         {
-            if (!fstDiffFound && set1.states[i] != set2.states[i])
+            if (!fstDiffFound && set1.States[i] != set2.States[i])
             {
                 fstDiffFound = true;
                 ind1 = i;
             }
-            else if(!sndDiffFound && set1.states[i] != set2.states[i])
+            else if(!sndDiffFound && set1.States[i] != set2.States[i])
             {
                 sndDiffFound = true;
                 ind2 = i;
             }
-            else if (set1.states[i] != set2.states[i])
+            else if (set1.States[i] != set2.States[i])
             {
                 return [-1, -1];
             }
@@ -83,20 +83,20 @@ public class GraphReconfig
         }
         else
         {
-            return set1.graph.mat[inds[0], inds[1]] == 1;
+            return set1.Graph.Mat[inds[0], inds[1]] == 1;
         }
     }
 
     public Graph BuildReconfigGraph()
     {
         CalcAllIS();
-        Graph graphReconfig = new Graph(allIS.Count);
+        Graph graphReconfig = new Graph(AllIs.Count);
 
-        for (int i=0; i < allIS.Count; i++)
+        for (int i=0; i < AllIs.Count; i++)
         {
-            for (int j = 0; j < allIS.Count; j++)
+            for (int j = 0; j < AllIs.Count; j++)
             {
-                if (!allIS[i].Equals(allIS[j]) && AreISNeighbours(allIS[i], allIS[j]))
+                if (!AllIs[i].Equals(AllIs[j]) && AreISNeighbours(AllIs[i], AllIs[j]))
                 {
                     graphReconfig.AddEdge(i, j);
                 }

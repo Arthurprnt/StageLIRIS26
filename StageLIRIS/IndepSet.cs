@@ -2,16 +2,16 @@ namespace StageLIRIS;
 
 public class IndepSet
 {
-    public Graph graph;
-    public int[] states;
-    public int maxSize;
-    public int currSize;
+    public readonly Graph Graph;
+    public int[] States;
+    public readonly int MaxSize;
+    public int CurrSize;
     
     public IndepSet(Graph graph, int k)
     {
-        this.graph = graph;
-        states = new int[graph.nbVert];
-        maxSize = k;
+        this.Graph = graph;
+        States = new int[graph.NbVert];
+        MaxSize = k;
     }
 
     public override bool Equals(object? obj)
@@ -22,25 +22,25 @@ public class IndepSet
         }
         else
         {
-            return ((IndepSet)obj).states.Equals(this.states) && ((IndepSet)obj).graph.Equals(this.graph) && ((IndepSet)obj).maxSize == this.maxSize && ((IndepSet)obj).currSize == this.currSize;
+            return ((IndepSet)obj).States.Equals(this.States) && ((IndepSet)obj).Graph.Equals(this.Graph) && ((IndepSet)obj).MaxSize == this.MaxSize && ((IndepSet)obj).CurrSize == this.CurrSize;
         }
     }
 
     public IndepSet Clone()
     {
-        IndepSet newSet = new IndepSet(graph, maxSize);
-        for (int i = 0; i < graph.nbVert; i++)
+        IndepSet newSet = new IndepSet(Graph, MaxSize);
+        for (int i = 0; i < Graph.NbVert; i++)
         {
-            newSet.states[i] = states[i];
+            newSet.States[i] = States[i];
         }
         return newSet;
     }
 
     public void Write()
     {
-        for (int i = 0; i < graph.nbVert; i++)
+        for (int i = 0; i < Graph.NbVert; i++)
         {
-            if (states[i] == 1)
+            if (States[i] == 1)
             {
                 Console.Write(i + " ");
             }
@@ -50,18 +50,18 @@ public class IndepSet
     
     public void WriteStates()
     {
-        for (int i = 0; i < graph.nbVert; i++)
+        for (int i = 0; i < Graph.NbVert; i++)
         {
-            Console.Write(states[i] + " ");
+            Console.Write(States[i] + " ");
         }
         Console.WriteLine();
     }
 
     public bool CanAddVert(int vert)
     {
-        for (int i = 0; i < graph.vois[vert].Count; i++)
+        for (int i = 0; i < Graph.Vois[vert].Count; i++)
         {
-            if (graph.vois[vert][i] != vert && states[graph.vois[vert][i]] == 1)
+            if (Graph.Vois[vert][i] != vert && States[Graph.Vois[vert][i]] == 1)
             {
                 return false;
             }
@@ -71,19 +71,19 @@ public class IndepSet
 
     public void AddVert(int vert)
     {
-        if (states[vert] == 0)
+        if (States[vert] == 0)
         {
-            states[vert] = 1;
-            currSize++;
+            States[vert] = 1;
+            CurrSize++;
         }
     }
 
     public void RemoveVert(int vert)
     {
-        if (states[vert] == 1)
+        if (States[vert] == 1)
         {
-            states[vert] = 0;
-            currSize--;
+            States[vert] = 0;
+            CurrSize--;
         }
     }
 }

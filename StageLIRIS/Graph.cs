@@ -4,29 +4,29 @@ namespace StageLIRIS;
 
 public class Graph
 {
-    public int[,] mat;
-    public List<List<int>> vois;
-    public int nbVert;
-    public int nbEdges;
+    public int[,] Mat;
+    public List<List<int>> Vois;
+    public readonly int NbVert;
+    public int NbEdges;
 
     public Graph(int nbVertices)
     {
-        mat = new int[nbVertices, nbVertices];
-        vois = new List<List<int>>(nbVertices);
+        Mat = new int[nbVertices, nbVertices];
+        Vois = new List<List<int>>(nbVertices);
         for (int i = 0; i < nbVertices; i++)
         {
-            vois.Add(new List<int>());
+            Vois.Add(new List<int>());
         }
-        nbVert = nbVertices;
+        NbVert = nbVertices;
     }
 
     public void WriteMat()
     {
-        for (int i = 0; i < nbVert; i++)
+        for (int i = 0; i < NbVert; i++)
         {
-            for (int j = 0; j < nbVert; j++)
+            for (int j = 0; j < NbVert; j++)
             {
-                Console.Write(mat[i, j] + " ");
+                Console.Write(Mat[i, j] + " ");
             }
             Console.WriteLine();
         }
@@ -34,12 +34,12 @@ public class Graph
 
     public void WriteVois()
     {
-        for (int i = 0; i < nbVert; i++)
+        for (int i = 0; i < NbVert; i++)
         {
             Console.Write(i + ": [ ");
-            for (int j = 0; j < vois[i].Count; j++)
+            for (int j = 0; j < Vois[i].Count; j++)
             {
-                Console.Write(vois[i][j] + " ");
+                Console.Write(Vois[i][j] + " ");
             }
             Console.WriteLine("]");
         }
@@ -47,20 +47,20 @@ public class Graph
     
     public void AddEdge(int from, int to)
     {
-        mat[from, to] = 1;
-        mat[to, from] = 1;
+        Mat[from, to] = 1;
+        Mat[to, from] = 1;
         
-        vois[from].Add(to);
-        vois[to].Add(from);
+        Vois[from].Add(to);
+        Vois[to].Add(from);
         
-        nbEdges++;
+        NbEdges++;
     }
     
     public List<int> GetDistFromVertice(int vert) {
         List<int> dist = new List<int>();
         List<bool> visited = new List<bool>();
 
-        for (int i = 0; i < nbVert; i++) {
+        for (int i = 0; i < NbVert; i++) {
             dist.Add(-1);
             visited.Add(false);
         }
@@ -73,9 +73,9 @@ public class Graph
         while (queue.Count != 0) {
             
             int current = queue.Dequeue();
-            for (int i = 0; i < vois[current].Count; i++)
+            for (int i = 0; i < Vois[current].Count; i++)
             {
-                int neigh = vois[current][i];
+                int neigh = Vois[current][i];
                 if (neigh != current && !visited[neigh])
                 {
                     visited[neigh] = true;
@@ -94,7 +94,7 @@ public class Graph
         List<int> dist = new List<int>();
         List<bool> visited = new List<bool>();
 
-        for (int i = 0; i < nbVert; i++) {
+        for (int i = 0; i < NbVert; i++) {
             dist.Add(-1);
             visited.Add(false);
         }
@@ -107,9 +107,9 @@ public class Graph
         while (queue.Count != 0) {
             
             int current = queue.Dequeue();
-            for (int i = 0; i < vois[current].Count; i++)
+            for (int i = 0; i < Vois[current].Count; i++)
             {
-                int neigh = vois[current][i];
+                int neigh = Vois[current][i];
                 if (neigh != current && !visited[neigh])
                 {
                     visited[neigh] = true;
@@ -134,7 +134,7 @@ public class Graph
         tempVerts.Add(-1); tempVerts.Add(-1);
         
         int maxi = -1;
-        for(int i=0; i<nbVert; i++)
+        for(int i=0; i<NbVert; i++)
         {
             // maxs = [maxDist, maxNeigh]
             int[] maxs = GetMaxDistFromVertice(i);

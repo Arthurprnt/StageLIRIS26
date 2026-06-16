@@ -24,7 +24,7 @@ public class GraphGenerator
         return graph;
     }
 
-    public static Graph GetHOGGraph(string filePath)
+    public static Graph GetHogGraph(string filePath)
     {
         string[] lines = File.ReadAllLines(filePath);
 
