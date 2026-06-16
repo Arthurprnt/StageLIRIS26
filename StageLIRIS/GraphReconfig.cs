@@ -13,7 +13,7 @@ public class GraphReconfig
         this.K = k;
     }
 
-    public void CalcAllISRec(int from, IndepSet currSet)
+    public void CalcAllIsRec(int from, IndepSet currSet)
     {
         if (currSet.CurrSize == K)
         {
@@ -24,26 +24,26 @@ public class GraphReconfig
         {
             // On continue la construction
             // On n'ajoute pas ce sommet à l'IS
-            CalcAllISRec(from+1, currSet);
+            CalcAllIsRec(from+1, currSet);
             // On ajoute ce sommet à l'IS
             if (currSet.CanAddVert(from))
             {
                 currSet.AddVert(from);
-                CalcAllISRec(from+1, currSet);
+                CalcAllIsRec(from+1, currSet);
                 currSet.RemoveVert(from); // on le renlève (propreté)
             }
             
         }
     }
     
-    public List<IndepSet> CalcAllIS()
+    public List<IndepSet> CalcAllIs()
     {
         AllIs = new List<IndepSet>();
-        CalcAllISRec(0, new IndepSet(Graph, K));
+        CalcAllIsRec(0, new IndepSet(Graph, K));
         return AllIs;
     }
 
-    public int[] FindDiffBtwIS(IndepSet set1, IndepSet set2)
+    public int[] FindDiffBtwIs(IndepSet set1, IndepSet set2)
     {
         // Renvoie les deux indices des sommets qui diffèrent entre les IS
         // Renvoie une paire de -1 si il y a plus d'une différence
@@ -75,7 +75,7 @@ public class GraphReconfig
     {
         // Il faut être sur que les IS proviennent du même graphe
         // Possibilité de rajouter la vérif plus tard
-        int[] inds =  FindDiffBtwIS(set1, set2);
+        int[] inds =  FindDiffBtwIs(set1, set2);
         if (inds[0] == inds[1])
         {
             // Le seul cas où les deux vals sont égales c'est -1
@@ -89,7 +89,7 @@ public class GraphReconfig
 
     public Graph BuildReconfigGraph()
     {
-        CalcAllIS();
+        CalcAllIs();
         Graph graphReconfig = new Graph(AllIs.Count);
 
         for (int i=0; i < AllIs.Count; i++)

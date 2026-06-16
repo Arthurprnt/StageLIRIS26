@@ -6,7 +6,7 @@ public class Graph
 {
     public int[,] Mat;
     public List<List<int>> Vois;
-    public readonly int NbVert;
+    public int NbVert;
     public int NbEdges;
 
     public Graph(int nbVertices)
@@ -44,6 +44,13 @@ public class Graph
             Console.WriteLine("]");
         }
     }
+
+    public void AddVertex()
+    {
+        // /!\ Désyncronise la matrice d'adjacence
+        Vois.Add(new List<int>(NbVert));
+        NbVert++;
+    }
     
     public void AddEdge(int from, int to)
     {
@@ -54,6 +61,18 @@ public class Graph
         Vois[to].Add(from);
         
         NbEdges++;
+    }
+
+    public void RebuildMat()
+    {
+        Mat = new int[NbVert, NbVert];
+        for (int i = 0; i < NbVert; i++)
+        {
+            for (int v = 0; v < Vois[i].Count; v++)
+            {
+                Mat[i, v] = 1;
+            }
+        }
     }
     
     public List<int> GetDistFromVertice(int vert) {

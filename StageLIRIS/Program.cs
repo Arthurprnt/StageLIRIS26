@@ -12,8 +12,7 @@ void GetDiamOfIsGraph(string filePath, int k, int[] shows)
     Stopwatch stopwatch = Stopwatch.StartNew(); 
 
     if(shows[0] == 1) Console.WriteLine("Construction du graph...");
-    Graph graph;
-    graph = GraphGenerator.GetHogGraph(filePath);
+    Graph graph = GraphGenerator.GetHogGraph(filePath);
     if(shows[0] == 1) Console.WriteLine("Fin de la construction du graph");
 
     if (shows[1] == 1)
@@ -30,8 +29,13 @@ void GetDiamOfIsGraph(string filePath, int k, int[] shows)
     
     GraphReconfig graphReconfig = new GraphReconfig(graph, k);
     if(shows[0] == 1) Console.WriteLine("Début du calcul des IS...");
-    graphReconfig.CalcAllIS();
-    Console.WriteLine("Liste des IS trouvés, il y en a " +  graphReconfig.AllIs.Count);
+    graphReconfig.CalcAllIs();
+    Console.WriteLine("Liste des IS1 trouvés, il y en a " +  graphReconfig.AllIs.Count);
+    
+    GraphReconfig2 graphReconfig2 = new GraphReconfig2(graph, k);
+    if(shows[0] == 1) Console.WriteLine("Début du calcul des IS...");
+    graphReconfig2.CalcAllIs();
+    Console.WriteLine("Liste des IS2 trouvés, il y en a " +  graphReconfig2.AllIs.Count);
 
     if (shows[3] == 1)
     {
@@ -41,6 +45,7 @@ void GetDiamOfIsGraph(string filePath, int k, int[] shows)
         }
     }
     
+    /*
     if(shows[0] == 1) Console.WriteLine("Début de la construction du graph des IS...");
     Graph graphIS = graphReconfig.BuildReconfigGraph();
     if(shows[0] == 1) Console.WriteLine("Fin de la construction du graph des IS");
@@ -69,6 +74,7 @@ void GetDiamOfIsGraph(string filePath, int k, int[] shows)
     Console.WriteLine("Temps d'éxécution en secondes: " + stopwatch.ElapsedMilliseconds/1000);
     Console.WriteLine("========================================");
     Console.WriteLine();
+    */
 }
 
 GetDiamOfIsGraph("graphs/hog/graph_1173.txt", 3, [1, 0, 0, 0]);
