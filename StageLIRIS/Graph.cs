@@ -87,6 +87,46 @@ public class Graph
         return dist;
     }
     
+    public int[] GetMaxDistFromVertice(int vert)
+    {
+        int maxDist = 0;
+        int maxNeigh = vert;
+        List<int> dist = new List<int>();
+        List<bool> visited = new List<bool>();
+
+        for (int i = 0; i < nbVert; i++) {
+            dist.Add(-1);
+            visited.Add(false);
+        }
+
+        visited[vert] = true;
+        Queue<int> queue = new Queue<int>();
+        queue.Enqueue(vert);
+        dist[vert] = 0;
+
+        while (queue.Count != 0) {
+            
+            int current = queue.Dequeue();
+            for (int i = 0; i < vois[current].Count; i++)
+            {
+                int neigh = vois[current][i];
+                if (neigh != current && !visited[neigh])
+                {
+                    visited[neigh] = true;
+                    int newDist = dist[current] + 1;
+                    dist[neigh] = newDist;
+                    if (newDist > maxDist)
+                    {
+                        maxDist = newDist;
+                        maxNeigh = neigh;
+                    }
+                    queue.Enqueue(neigh);
+                }
+            }
+        }
+        return [maxDist, maxNeigh];
+    }
+    
     public int GetDiameter(List<int> verts) {
         verts.Add(-1); verts.Add(-1);
         
@@ -94,22 +134,15 @@ public class Graph
         tempVerts.Add(-1); tempVerts.Add(-1);
         
         int maxi = -1;
-        for(int i=0; i<nbVert; i++) {
-            int tempMax = -1;
-            List<int> dists = GetDistFromVertice(i);
-            for (int j = 0; j < dists.Count; j++)
-            {
-                if (dists[j] >= 0 && dists[j] > tempMax)
-                {
-                    tempMax = dists[j];
-                    tempVerts[0] = i;
-                    tempVerts[1] = j;
-                }
-            }
+        for(int i=0; i<nbVert; i++)
+        {
+            // maxs = [maxDist, maxNeigh]
+            int[] maxs = GetMaxDistFromVertice(i);
+            int tempMax = maxs[0];
             if(tempMax > maxi) {
                 maxi = tempMax;
-                verts[0] = tempVerts[0];
-                verts[1] = tempVerts[1];
+                verts[0] = i;
+                verts[1] = maxs[1];
             }
         }
         return maxi;
