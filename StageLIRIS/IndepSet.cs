@@ -14,7 +14,19 @@ public class IndepSet
         maxSize = k;
     }
 
-    public IndepSet clone()
+    public override bool Equals(object? obj)
+    {
+        if (obj.GetType() != typeof(IndepSet))
+        {
+            return false;
+        }
+        else
+        {
+            return ((IndepSet)obj).states.Equals(this.states) && ((IndepSet)obj).graph.Equals(this.graph) && ((IndepSet)obj).maxSize == this.maxSize && ((IndepSet)obj).currSize == this.currSize;
+        }
+    }
+
+    public IndepSet Clone()
     {
         IndepSet newSet = new IndepSet(graph, maxSize);
         for (int i = 0; i < graph.nbVert; i++)
@@ -24,7 +36,19 @@ public class IndepSet
         return newSet;
     }
 
-    public void write()
+    public void Write()
+    {
+        for (int i = 0; i < graph.nbVert; i++)
+        {
+            if (states[i] == 1)
+            {
+                Console.Write(i + " ");
+            }
+        }
+        Console.WriteLine();
+    }
+    
+    public void WriteStates()
     {
         for (int i = 0; i < graph.nbVert; i++)
         {
@@ -33,7 +57,7 @@ public class IndepSet
         Console.WriteLine();
     }
 
-    public bool canAddVert(int vert)
+    public bool CanAddVert(int vert)
     {
         for (int i = 0; i < graph.vois[vert].Count; i++)
         {
@@ -45,7 +69,7 @@ public class IndepSet
         return true;
     }
 
-    public void addVert(int vert)
+    public void AddVert(int vert)
     {
         if (states[vert] == 0)
         {
@@ -54,7 +78,7 @@ public class IndepSet
         }
     }
 
-    public void removeVert(int vert)
+    public void RemoveVert(int vert)
     {
         if (states[vert] == 1)
         {

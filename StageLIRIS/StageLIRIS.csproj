@@ -11,6 +11,13 @@
         <None Update="graphs/**/*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Update="graphs\gra\graph.txt">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="graphs\hog\" />
     </ItemGroup>
 
 </Project>

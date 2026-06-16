@@ -12,7 +12,7 @@ public class Graph
     public Graph(int nbVertices)
     {
         mat = new int[nbVertices, nbVertices];
-        vois = new List<List<int>>();
+        vois = new List<List<int>>(nbVertices);
         for (int i = 0; i < nbVertices; i++)
         {
             vois.Add(new List<int>());
@@ -20,7 +20,7 @@ public class Graph
         nbVert = nbVertices;
     }
 
-    public void writeMat()
+    public void WriteMat()
     {
         for (int i = 0; i < nbVert; i++)
         {
@@ -32,7 +32,7 @@ public class Graph
         }
     }
 
-    public void writeVois()
+    public void WriteVois()
     {
         for (int i = 0; i < nbVert; i++)
         {
@@ -45,7 +45,7 @@ public class Graph
         }
     }
     
-    public void addEdge(int from, int to)
+    public void AddEdge(int from, int to)
     {
         mat[from, to] = 1;
         mat[to, from] = 1;
@@ -56,7 +56,7 @@ public class Graph
         nbEdges++;
     }
     
-    public List<int> getDistFromVertice(int vert) {
+    public List<int> GetDistFromVertice(int vert) {
         List<int> dist = new List<int>();
         List<bool> visited = new List<bool>();
 
@@ -87,22 +87,36 @@ public class Graph
         return dist;
     }
     
-    public double getDiameter() {
+    public int GetDiameter(List<int> verts) {
+        verts.Add(-1); verts.Add(-1);
+        
+        List<int> tempVerts = new List<int>();
+        tempVerts.Add(-1); tempVerts.Add(-1);
+        
         int maxi = -1;
         for(int i=0; i<nbVert; i++) {
             int tempMax = -1;
-            List<int> dists = getDistFromVertice(i);
+            List<int> dists = GetDistFromVertice(i);
             for (int j = 0; j < dists.Count; j++)
             {
                 if (dists[j] >= 0 && dists[j] > tempMax)
                 {
                     tempMax = dists[j];
+                    tempVerts[0] = i;
+                    tempVerts[1] = j;
                 }
             }
             if(tempMax > maxi) {
                 maxi = tempMax;
+                verts[0] = tempVerts[0];
+                verts[1] = tempVerts[1];
             }
         }
         return maxi;
+    }
+    
+    public int GetDiameter()
+    {
+        return GetDiameter(new List<int>());
     }
 }
