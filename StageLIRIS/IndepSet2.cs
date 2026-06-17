@@ -56,15 +56,15 @@ public class IndepSet2
         Console.WriteLine();
     }
 
-    public int ToInt()
+    public string ToString()
     {
-        double sum = 0;
+        string code = "";
         for (int i = 0; i < CurrSize; i++)
         {
-            sum += Math.Pow(10, CurrSize-i-1)*Verts[i];
+            if (i != 0) code += " ";
+            code += Verts[i];
         }
-
-        return (int)sum;
+        return code;
     }
     
     public int RechDicho(int ind)

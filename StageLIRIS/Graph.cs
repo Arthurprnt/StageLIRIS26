@@ -8,6 +8,7 @@ public class Graph
     public List<List<int>> Vois;
     public int NbVert;
     public int NbEdges;
+    public bool IsMatSync = true;
 
     public Graph(int nbVertices)
     {
@@ -48,19 +49,32 @@ public class Graph
     public void AddVertex()
     {
         // /!\ Désyncronise la matrice d'adjacence
+        IsMatSync = false;
         Vois.Add(new List<int>(NbVert));
         NbVert++;
     }
     
     public void AddEdge(int from, int to)
     {
-        Mat[from, to] = 1;
-        Mat[to, from] = 1;
+        if (IsMatSync)
+        {
+            Mat[from, to] = 1;
+            Mat[to, from] = 1;
+        }
+
+        int isNewEdge = 0;
+        if (!Vois[from].Contains(to))
+        {
+            Vois[from].Add(to);
+            isNewEdge++;
+        }
+        if (!Vois[to].Contains(from))
+        {
+            Vois[to].Add(from);
+            isNewEdge++;
+        }
         
-        Vois[from].Add(to);
-        Vois[to].Add(from);
-        
-        NbEdges++;
+        if(isNewEdge == 2) NbEdges++;
     }
 
     public void RebuildMat()
@@ -73,6 +87,7 @@ public class Graph
                 Mat[i, v] = 1;
             }
         }
+        IsMatSync = true;
     }
     
     public List<int> GetDistFromVertice(int vert) {
