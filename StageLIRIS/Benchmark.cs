@@ -145,11 +145,11 @@ public class Benchmark
         if(shows[0] == 1) Console.WriteLine("Début du calcul du diamètre du graph des IS...");
         List<int> vertsDiametre = new List<int>();
         int diameter = graphIs.GetDiameter(vertsDiametre);
-        if(shows[0] == 1)Console.WriteLine("Le diamètre du graph des IS est " + diameter + " est les IS sont:");
-        graphReconfig.AllIs[vertsDiametre[0]].Write();
-        graphReconfig.AllIs[vertsDiametre[1]].Write();
         if(shows[0] == 1)
         {
+            Console.WriteLine("Le diamètre du graph des IS est " + diameter + " est les IS sont:");
+            graphReconfig.AllIs[vertsDiametre[0]].Write();
+            graphReconfig.AllIs[vertsDiametre[1]].Write();
             Console.WriteLine("Temps de création du graph reconfig en ms: " + stopwatch.ElapsedMilliseconds);
             Console.WriteLine("========================================");
             Console.WriteLine();
@@ -189,6 +189,11 @@ public class Benchmark
                 return BuildReconfigGraph3(graph, k, shows);
         }
         throw new Exception("Version " + version + " not supported");
+    }
+
+    public static long GetDiamOfIsGraph(string filePath, int k, int[] shows, int version)
+    {
+        return GetDiamOfIsGraph(filePath, k, shows, version, new List<int>());
     }
 
     public static void runBenchmark(int nbGraph)

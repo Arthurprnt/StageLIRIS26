@@ -123,13 +123,8 @@ public class Graph
     {
         int maxDist = 0;
         int maxNeigh = vert;
-        List<int> dist = new List<int>();
-        List<bool> visited = new List<bool>();
-
-        for (int i = 0; i < NbVert; i++) {
-            dist.Add(-1);
-            visited.Add(false);
-        }
+        int[] dist = new int[NbVert];
+        bool[] visited = new bool[NbVert];
 
         visited[vert] = true;
         Queue<int> queue = new Queue<int>();
