@@ -6,12 +6,11 @@ public class GraphReconfig2
     public readonly int K;
     public List<IndepSet2> AllIs;
     public Dictionary<string, int> IsToIndex = new Dictionary<string, int>();
-    public Graph GraphReconfig;
+    public Graph GraphReconfig = new Graph(0);
     
     public GraphReconfig2(Graph graph, int k)
     {
         this.Graph = graph;
-        GraphReconfig = new Graph(0);
         this.K = k;
     }
 
@@ -25,7 +24,7 @@ public class GraphReconfig2
         return indepSetId;
     }
 
-    public IndepSet2 calcIs(int from)
+    public IndepSet2 CalcIs(int from)
     {
         int ind = 0;
         IndepSet2 indepSet = new IndepSet2(Graph, K);
@@ -46,38 +45,38 @@ public class GraphReconfig2
         return indepSet;
     }
 
-    public int CalcAllIsRec(IndepSet2 currIS, int prevVert)
+    public int CalcAllIsRec(IndepSet2 currIs, int prevVert)
     {
-        if (currIS.CurrSize != currIS.MaxSize) throw new Exception("L'IS n'est pas de taille k");
-        if (!AllIs.Contains(currIS))
+        if (currIs.CurrSize != currIs.MaxSize) throw new Exception("L'IS n'est pas de taille k");
+        if (!AllIs.Contains(currIs))
         {
-            int currSetId = AddVertex(currIS);
-            for (int i = 0; i < currIS.MaxSize; i++)
+            int currSetId = AddVertex(currIs);
+            for (int i = 0; i < currIs.MaxSize; i++)
             {
-                int currVert = currIS.Verts[i];
+                int currVert = currIs.Verts[i];
                 for (int v = 0; v < Graph.Vois[currVert].Count; v++)
                 {
                     int savedNeigh = Graph.Vois[currVert][v];
                     if (savedNeigh != prevVert)
                     {
-                        currIS.RemoveVert(currVert);
-                        if (currIS.CanAddVert(savedNeigh))
+                        currIs.RemoveVert(currVert);
+                        if (currIs.CanAddVert(savedNeigh))
                         {
-                            currIS.AddVert(savedNeigh);
-                            int nextSetId = CalcAllIsRec(currIS, currVert);
+                            currIs.AddVert(savedNeigh);
+                            int nextSetId = CalcAllIsRec(currIs, currVert);
                             GraphReconfig.AddEdge(currSetId, nextSetId);
-                            currIS.ReplaceVert(savedNeigh, currVert);
+                            currIs.ReplaceVert(savedNeigh, currVert);
                         }
                         else
                         {
-                            currIS.AddVert(currVert);
+                            currIs.AddVert(currVert);
                         }
                     }
                 }
             }
             return currSetId;
         }
-        return IsToIndex[currIS.ToString()];
+        return IsToIndex[currIs.ToString()];
     }
 
     public List<IndepSet2> CalcAllIs()
@@ -87,7 +86,7 @@ public class GraphReconfig2
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet2 calcedIs = calcIs(i);
+            IndepSet2 calcedIs = CalcIs(i);
             CalcAllIsRec(calcedIs, -1);
         }
         

@@ -71,7 +71,7 @@ public class GraphReconfig
         return [ind1, ind2];
     }
 
-    public bool AreISNeighbours(IndepSet set1, IndepSet set2)
+    public bool AreIsNeighbours(IndepSet set1, IndepSet set2)
     {
         // Il faut être sur que les IS proviennent du même graphe
         // Possibilité de rajouter la vérif plus tard
@@ -96,7 +96,7 @@ public class GraphReconfig
         {
             for (int j = 0; j < AllIs.Count; j++)
             {
-                if (!AllIs[i].Equals(AllIs[j]) && AreISNeighbours(AllIs[i], AllIs[j]))
+                if (!AllIs[i].Equals(AllIs[j]) && AreIsNeighbours(AllIs[i], AllIs[j]))
                 {
                     graphReconfig.AddEdge(i, j);
                 }

@@ -1,5 +1,3 @@
-using System.Collections;
-
 namespace StageLIRIS;
 
 public class Graph
@@ -163,9 +161,6 @@ public class Graph
     
     public int GetDiameter(List<int> verts) {
         verts.Add(-1); verts.Add(-1);
-        
-        List<int> tempVerts = new List<int>();
-        tempVerts.Add(-1); tempVerts.Add(-1);
         
         int maxi = -1;
         for(int i=0; i<NbVert; i++)

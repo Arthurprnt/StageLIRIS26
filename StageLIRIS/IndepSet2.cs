@@ -56,7 +56,7 @@ public class IndepSet2
         Console.WriteLine();
     }
 
-    public string ToString()
+    public override string ToString()
     {
         string code = "";
         for (int i = 0; i < CurrSize; i++)
