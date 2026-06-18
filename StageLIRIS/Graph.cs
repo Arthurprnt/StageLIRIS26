@@ -2,10 +2,13 @@ namespace StageLIRIS;
 
 public class Graph
 {
+    // La matrice est valide tant que AddVert() n'est pas appelé
+    // Il faut utilise RebuildMat() pour la reconstruire
     public int[,] Mat;
     public List<List<int>> Vois;
     public int NbVert;
     public int NbEdges;
+    // Indique si la matrice est valide ou non
     public bool IsMatSync = true;
 
     public Graph(int nbVertices)
@@ -60,6 +63,7 @@ public class Graph
             Mat[to, from] = 1;
         }
 
+        // On incrémente le compteur d'arête seulement si elle n'est pas déjà présente
         int isNewEdge = 0;
         if (!Vois[from].Contains(to))
         {
@@ -77,6 +81,7 @@ public class Graph
 
     public void RebuildMat()
     {
+        // Resynchronise la matrice d'adjacence
         Mat = new int[NbVert, NbVert];
         for (int i = 0; i < NbVert; i++)
         {
@@ -89,6 +94,7 @@ public class Graph
     }
     
     public List<int> GetDistFromVertice(int vert) {
+        // Renvoie les distances entre un sommet et tous les autres du graphe
         List<int> dist = new List<int>();
         List<bool> visited = new List<bool>();
 
@@ -103,7 +109,6 @@ public class Graph
         dist[vert] = 0;
 
         while (queue.Count != 0) {
-            
             int current = queue.Dequeue();
             for (int i = 0; i < Vois[current].Count; i++)
             {
@@ -121,6 +126,9 @@ public class Graph
     
     public int[] GetMaxDistFromVertice(int vert)
     {
+        // Renvoie seulement la plus grande distance entre le sommet Vert et un autre sommet du graphe
+        // Utile lors du calcul du diamètre pour ne pas reparcourir un tableau inutilement
+        // Renvoie la distance et le sommet associé
         int maxDist = 0;
         int maxNeigh = vert;
         int[] dist = new int[NbVert];
@@ -155,6 +163,7 @@ public class Graph
     }
     
     public int GetDiameter(List<int> verts) {
+        // Stock dans verts les deux extrémités du diamètre
         verts.Add(-1); verts.Add(-1);
         
         int maxi = -1;
@@ -174,6 +183,7 @@ public class Graph
     
     public int GetDiameter()
     {
+        // Polymorphisme
         return GetDiameter(new List<int>());
     }
 }

@@ -5,6 +5,11 @@ namespace StageLIRIS;
 
 public class IndepSet3
 {
+    // Optimisation de l'IndepSet1
+    // Les états sont stocké sous forme de bits dans un long
+        // -> Plus comptacte
+        // -> Inconvénient: pas plus de 64 sommets dans le graphe de base
+    
     public readonly Graph Graph;
     public long States = 0L;
     public readonly int MaxSize;
@@ -28,12 +33,14 @@ public class IndepSet3
 
     public void Set(int ind, bool val)
     {
+        // Setter du tableau States
         if (val) States += 1L << ind;
         else States -= 1L << ind;
     }
 
     public bool Get(int ind)
     {
+        // Getter du tableau States
         return (States & (1L << ind)) != 0;
     }
 
@@ -68,6 +75,8 @@ public class IndepSet3
     
     public bool CanAddVert(int vert)
     {
+        // Renvoie si l'IS serait valide en ajouter le sommet vert
+        // Pour chaque voisin du sommet vert, on vérifie s'il est déjà dans l'IS
         for (int i = 0; i < Graph.Vois[vert].Count; i++)
         {
             if (Graph.Vois[vert][i] != vert && Get(Graph.Vois[vert][i]))
@@ -80,6 +89,7 @@ public class IndepSet3
     
     public void AddVert(int vert)
     {
+        // Ajoute le sommet à l'IS
         if (!Get(vert) && CurrSize < MaxSize)
         {
             Set(vert, true);
@@ -89,6 +99,7 @@ public class IndepSet3
     
     public void RemoveVert(int vert)
     {
+        // L'enlève de l'IS
         if (Get(vert))
         {
             Set(vert, false);

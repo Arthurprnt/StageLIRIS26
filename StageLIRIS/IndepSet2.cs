@@ -2,6 +2,10 @@ namespace StageLIRIS;
 
 public class IndepSet2
 {
+    // Diff avec l'IndepSet1
+    // Seuls les sommets de l'IS sont stockés dans le tableau Verts
+    // Ce tableau est toujours maintenu trié pour pouvoir observer les différences entre IS
+    
     public readonly Graph Graph;
     public readonly int MaxSize;
     public int CurrSize;
@@ -93,6 +97,7 @@ public class IndepSet2
     
     public bool CanAddVert(int vert)
     {
+        // Renvoie si l'IS serait valide en ajouter le sommet vert
         // Pour chaque sommet déjà dans le IS on vérifie s'il a vert comme voisin
         for (int i = 0; i < CurrSize; i++)
         {
@@ -125,6 +130,7 @@ public class IndepSet2
     public void RemoveVert(int vert)
     {
         int ind = RechDicho(vert);
+        // On s'assure que le sommet soit déjà dans l'IS
         if (ind != -1)
         {
             for (int i = ind; i < CurrSize-1; i++)

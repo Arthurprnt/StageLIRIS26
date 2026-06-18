@@ -4,7 +4,7 @@ namespace StageLIRIS;
 
 public class Benchmark
 {
-    public static long BuildReconfigGraph(Graph graph, int k, int[] shows)
+    public static long BuildReconfigGraph(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -55,7 +55,7 @@ public class Benchmark
         return stopwatch.ElapsedMilliseconds;
     }
 
-    public static long BuildReconfigGraph2(Graph graph, int k, int[] shows)
+    public static long BuildReconfigGraph2(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -106,12 +106,12 @@ public class Benchmark
         return stopwatch.ElapsedMilliseconds;
     }
 
-    public static long BuildReconfigGraph3(Graph graph, int k, int[] shows)
+    public static long BuildReconfigGraph3(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
         
-        GraphReconfig3 graphReconfig = new GraphReconfig3(graph, k);
+        GraphReconfig3 graphReconfig = new GraphReconfig3(graph, k, mode);
         if(shows[0] == 1) Console.WriteLine("Début du calcul des IS...");
         graphReconfig.CalcAllIsIte();
         if(shows[0] == 1) Console.WriteLine("Liste des IS1 trouvés, il y en a " +  graphReconfig.AllIs.Count);
@@ -157,8 +157,10 @@ public class Benchmark
         return stopwatch.ElapsedMilliseconds;
     }
 
-    public static long GetDiamOfIsGraph(string filePath, int k, int[] shows, int version, List<int> listToGraphSize)
+    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version, List<int> listToGraphSize)
     {
+        // Mode: Token sliding -> S | Token jumping -> J
+        // /!\ Le mode jumping n'est implémenté que pour la v3 (car la seule vrm opti)
         // Format shows: [showSteps, showMats, showAdjLst, showIS]
         if(shows[0] == 1) Console.WriteLine("===========| " + filePath.Split('/')[^1].ToUpper() + " | " + k + " | v" + version + " |===========");
 
@@ -182,21 +184,21 @@ public class Benchmark
         switch(version)
         {
             case 1:
-                return BuildReconfigGraph(graph, k, shows);
+                return BuildReconfigGraph(graph, k, mode, shows);
             case 2:
-                return BuildReconfigGraph2(graph, k, shows);
+                return BuildReconfigGraph2(graph, k, mode, shows);
             case 3:
-                return BuildReconfigGraph3(graph, k, shows);
+                return BuildReconfigGraph3(graph, k, mode, shows);
         }
         throw new Exception("Version " + version + " not supported");
     }
 
-    public static long GetDiamOfIsGraph(string filePath, int k, int[] shows, int version)
+    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version)
     {
-        return GetDiamOfIsGraph(filePath, k, shows, version, new List<int>());
+        return GetDiamOfIsGraph(filePath, k, mode, shows, version, new List<int>());
     }
 
-    public static void runBenchmark(int nbGraph)
+    public static void RunBenchmark(int nbGraph, char mode)
     {
         string[] directory = Directory.GetFiles("graphs/hog/database/");
         
@@ -213,7 +215,7 @@ public class Benchmark
             for (int v = 1; v <= 3; v++)
             {
                 List<int> graphSize = new List<int>();
-                long timeElapsed = GetDiamOfIsGraph(directory[i], 3, [0, 0, 0, 0], v, graphSize);
+                long timeElapsed = GetDiamOfIsGraph(directory[i], 3, mode, [0, 0, 0, 0], v, graphSize);
                 if(!timesElapsed[v].ContainsKey(graphSize[0]))  timesElapsed[v].Add(graphSize[0], [0, 0]);
                 timesElapsed[v][graphSize[0]][0] += timeElapsed;
                 timesElapsed[v][graphSize[0]][1] ++;

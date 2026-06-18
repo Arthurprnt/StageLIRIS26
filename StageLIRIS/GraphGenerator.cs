@@ -2,6 +2,17 @@ namespace StageLIRIS;
 
 public class GraphGenerator
 {
+    // Permet de générer des graphes en mémoire à partir de fichiers
+    // Il y a deux formats de fichiers accepté:
+        // Les 'gra':
+            // NB_VERTICES: 9
+            // NB_EDGES: 14
+            // 
+            // Liste des arêtes au format suivant:
+            // Vert1 Vert2
+        // Les 'hog':
+            // Liste des listes d'adjacences au format suivant:
+            // Vert: Vois1 Vois2 ... VoisN
 
     public static Graph GetGraGraph(string filePath)
     {

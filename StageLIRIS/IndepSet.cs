@@ -3,6 +3,9 @@ namespace StageLIRIS;
 public class IndepSet
 {
     public readonly Graph Graph;
+    // Tableau contenant tous les sommets
+        // 0: Le sommet n'est pas dans l'IS
+        // 1: Il est dedans
     public int[] States;
     public readonly int MaxSize;
     public int CurrSize;
@@ -59,6 +62,8 @@ public class IndepSet
 
     public bool CanAddVert(int vert)
     {
+        // Renvoie si l'IS serait valide en ajouter le sommet vert
+        // Pour chaque voisin du sommet vert, on vérifie s'il est déjà dans l'IS
         for (int i = 0; i < Graph.Vois[vert].Count; i++)
         {
             if (Graph.Vois[vert][i] != vert && States[Graph.Vois[vert][i]] == 1)
@@ -71,6 +76,7 @@ public class IndepSet
 
     public void AddVert(int vert)
     {
+        // Ajoute le sommet à l'IS
         if (States[vert] == 0)
         {
             States[vert] = 1;
@@ -80,6 +86,7 @@ public class IndepSet
 
     public void RemoveVert(int vert)
     {
+        // L'enlève de l'IS
         if (States[vert] == 1)
         {
             States[vert] = 0;
