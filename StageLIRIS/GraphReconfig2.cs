@@ -90,7 +90,6 @@ public class GraphReconfig2
             CalcAllIsRec(calcedIs, -1);
         }
         
-        GraphReconfig.RebuildMat();
         return AllIs;
     }
 }

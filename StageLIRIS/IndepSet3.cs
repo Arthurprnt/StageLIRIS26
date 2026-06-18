@@ -6,16 +6,13 @@ namespace StageLIRIS;
 public class IndepSet3
 {
     public readonly Graph Graph;
-    public BitVector32 States1;
-    public BitVector32 States2;
+    public long States = 0L;
     public readonly int MaxSize;
     public int CurrSize = 0;
 
     public IndepSet3(Graph graph, int k)
     {
         this.Graph = graph;
-        States1 = new BitVector32(0);
-        States2 = new BitVector32(0);
         MaxSize = k;
     }
     
@@ -26,44 +23,25 @@ public class IndepSet3
             return false;
         }
         IndepSet3 oth = (IndepSet3)obj;
-        return States1.Equals(oth.States1) && States2.Equals(oth.States2);
+        return States == oth.States &&  MaxSize == oth.MaxSize && CurrSize == oth.CurrSize;
     }
 
     public void Set(int ind, bool val)
     {
-        if (ind < 32)
-        {
-            int mask = 1 << ind;
-            States1[mask] = val;   
-        }
-        else
-        {
-            int mask = 1 << (ind - 32);
-            States2[mask] = val;
-        }
-        
+        if (val) States += 1L << ind;
+        else States -= 1L << ind;
     }
 
     public bool Get(int ind)
     {
-        if (ind < 32)
-        {
-            int mask = 1 << ind;
-            return States1[mask];   
-        }
-        else
-        {
-            int mask = 1 << (ind - 32);
-            return States2[mask];
-        }
+        return (States & (1L << ind)) != 0;
     }
 
     public IndepSet3 Clone()
     {
         IndepSet3 newSet = new IndepSet3(Graph, MaxSize);
         newSet.CurrSize = CurrSize;
-        newSet.States1 = States1;
-        newSet.States2 = States2;
+        newSet.States = States;
         return newSet;
     }
     

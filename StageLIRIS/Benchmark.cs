@@ -113,7 +113,7 @@ public class Benchmark
         
         GraphReconfig3 graphReconfig = new GraphReconfig3(graph, k);
         if(shows[0] == 1) Console.WriteLine("Début du calcul des IS...");
-        graphReconfig.CalcAllIs();
+        graphReconfig.CalcAllIsIte();
         if(shows[0] == 1) Console.WriteLine("Liste des IS1 trouvés, il y en a " +  graphReconfig.AllIs.Count);
 
         if(shows[3] == 1)
