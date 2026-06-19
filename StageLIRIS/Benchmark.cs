@@ -4,6 +4,11 @@ namespace StageLIRIS;
 
 public class Benchmark
 {
+    public static double roundTo2Decimals(double nb)
+    {
+        return Math.Truncate(nb * 100) / 100;
+    }
+    
     public static long BuildReconfigGraph(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
@@ -127,7 +132,6 @@ public class Benchmark
         if(shows[0] == 1) Console.WriteLine("Début de la construction du graph des IS...");
         Graph graphIs = graphReconfig.GraphReconfig;
         if(shows[0] == 1) Console.WriteLine("Fin de la construction du graph des IS");
-        stopwatch.Stop();
 
         if(shows[1] == 1)
         {
@@ -144,29 +148,31 @@ public class Benchmark
         if(shows[0] == 1)Console.WriteLine("Il y a " + graphIs.NbEdges + " arêtes dans le graph des IS");
         if(shows[0] == 1) Console.WriteLine("Début du calcul du diamètre du graph des IS...");
         List<int> vertsDiametre = new List<int>();
-        int diameter = graphIs.GetDiameter(vertsDiametre);
+        int diameter = graphIs.EstimateDiameter((int)Math.Sqrt(graphIs.NbVert), vertsDiametre);
+        //diameter = graphIs.GetDiameter(vertsDiametre);
+        stopwatch.Stop();
         if(shows[0] == 1)
         {
             Console.WriteLine("Le diamètre du graph des IS est " + diameter + " est les IS sont:");
             graphReconfig.AllIs[vertsDiametre[0]].Write();
             graphReconfig.AllIs[vertsDiametre[1]].Write();
-            Console.WriteLine("Temps de création du graph reconfig en ms: " + stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("Temps de de calcul total en ms: " + stopwatch.ElapsedMilliseconds);
             Console.WriteLine("========================================");
             Console.WriteLine();
         }
-        return stopwatch.ElapsedMilliseconds;
+        if(graphReconfig.isValid) return stopwatch.ElapsedMilliseconds;
+        return -1;
     }
 
-    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version, List<int> listToGraphSize)
+    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version)
     {
         // Mode: Token sliding -> S | Token jumping -> J
         // /!\ Le mode jumping n'est implémenté que pour la v3 (car la seule vrm opti)
         // Format shows: [showSteps, showMats, showAdjLst, showIS]
-        if(shows[0] == 1) Console.WriteLine("===========| " + filePath.Split('/')[^1].ToUpper() + " | " + k + " | v" + version + " |===========");
+        if(shows[0] == 1) Console.WriteLine("===========| " + filePath.Split('/')[^1].ToUpper() + " | k=" + k + " | mode=" + mode + " | v" + version + " |===========");
 
         if(shows[0] == 1) Console.WriteLine("Construction du graph...");
         Graph graph = GraphGenerator.GetHogGraph(filePath);
-        listToGraphSize.Add(graph.NbVert);
         if(shows[0] == 1) Console.WriteLine("Fin de la construction du graph");
 
         if(shows[1] == 1)
@@ -193,39 +199,48 @@ public class Benchmark
         throw new Exception("Version " + version + " not supported");
     }
 
-    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version)
+    public static void RunBenchmark(int tailleGraMin, int tailleGraMax, int tailleIsMin, int tailleIsMax, char mode)
     {
-        return GetDiamOfIsGraph(filePath, k, mode, shows, version, new List<int>());
-    }
+        string[] dbDirectories = Directory.GetDirectories("graphs/hog/database/");
+        Console.WriteLine("Temps moyen de la création du graphe en fonctions des tailles de graphe (en ms):");
+        Console.Write("NbVert\t\t");
+        for (int i = tailleIsMin; i <= tailleIsMax; i++)
+        {
+            Console.Write("k="+i+"\t\t");
+        }
 
-    public static void RunBenchmark(int nbGraph, char mode)
-    {
-        string[] directory = Directory.GetFiles("graphs/hog/database/");
-        
-        Dictionary<int, Dictionary<int, long[]>> timesElapsed = new Dictionary<int, Dictionary<int, long[]>>();
-        // algo-version -> taille-graphe -> [temps total; nb exec]
-        
-        for (int v = 1; v <= 3; v++)
+        Console.Write("\n");
+        for (int taille=tailleGraMin; taille<=tailleGraMax; taille++)
         {
-            timesElapsed.Add(v, new Dictionary<int, long[]>());
-        }
-        
-        for (int i = 0; i < nbGraph; i++)
-        {
-            for (int v = 1; v <= 3; v++)
+            string directory = "graphs/hog/database/" + taille.ToString();
+            if (Directory.Exists(directory))
             {
-                List<int> graphSize = new List<int>();
-                long timeElapsed = GetDiamOfIsGraph(directory[i], 3, mode, [0, 0, 0, 0], v, graphSize);
-                if(!timesElapsed[v].ContainsKey(graphSize[0]))  timesElapsed[v].Add(graphSize[0], [0, 0]);
-                timesElapsed[v][graphSize[0]][0] += timeElapsed;
-                timesElapsed[v][graphSize[0]][1] ++;
+                string[] files = Directory.GetFiles(directory);
+                int validFileNb = 0;
+                int graphSize = Int32.Parse(directory.Split('/')[^1]);
+                if (graphSize <= tailleGraMax)
+                {
+                    long[] times = new long[tailleIsMax-tailleIsMin+1];
+                    foreach (var file in files)
+                    {
+                        for (int k = tailleIsMin; k <= tailleIsMax; k++)
+                        {
+                            long timeElapsed = GetDiamOfIsGraph(file, k, mode, [0, 0, 0, 0], 3);
+                            if (timeElapsed > -1)
+                            {
+                                times[k - tailleIsMin] += timeElapsed;
+                                validFileNb++;
+                            }
+                        }
+                    }
+                    Console.Write(graphSize+":\t\t");
+                    for (int i = 0; i < times.Length; i++)
+                    {
+                        Console.Write(roundTo2Decimals((double)times[i]/(double)validFileNb)+"\t\t");
+                    }
+                    Console.Write("\n");
+                }
             }
-        }
-        Console.WriteLine("Temps moyen de la création du graphe en fonctions des tailles de graphe:");
-        Console.WriteLine("Version:\t1\t2\t3");
-        foreach(int key in timesElapsed[1].Keys)
-        {
-            Console.WriteLine(key + ":\t" +  timesElapsed[1][key][0]/timesElapsed[1][key][1] + "\t" + timesElapsed[2][key][0]/timesElapsed[2][key][1] + "\t" + timesElapsed[3][key][0]/timesElapsed[3][key][1]);
         }
     }
 }

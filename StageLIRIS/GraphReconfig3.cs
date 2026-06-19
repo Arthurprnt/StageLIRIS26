@@ -17,6 +17,7 @@ public class GraphReconfig3
     public List<IndepSet3> AllIs;
     public Dictionary<long, int> IsToIndex = new Dictionary<long, int>();
     public Graph GraphReconfig = new Graph(0);
+    public bool isValid = true;
 
     public GraphReconfig3(Graph graph, int k, char mode)
     {
@@ -64,7 +65,7 @@ public class GraphReconfig3
 
         if (indepSet.CurrSize != indepSet.MaxSize)
         {
-            throw new Exception("Il n'existe pas d'IS de taille " + K);
+            return null;
         }
         return indepSet;
     }
@@ -170,13 +171,20 @@ public class GraphReconfig3
         for (int i = 0; i < Graph.NbVert; i++)
         {
             IndepSet3 calcedIs = CalcIs(i);
-            if (calcedIs.CurrSize != calcedIs.MaxSize) 
-                throw new Exception("L'IS n'est pas de taille k");
-
-            if (!isIndepInDict(calcedIs))
+            if (calcedIs != null)
             {
-                AddVertex(calcedIs);
-                queue.Enqueue(calcedIs);
+                if (calcedIs.CurrSize != calcedIs.MaxSize) 
+                    throw new Exception("L'IS n'est pas de taille k");
+
+                if (!isIndepInDict(calcedIs))
+                {
+                    AddVertex(calcedIs);
+                    queue.Enqueue(calcedIs);
+                }
+            }
+            else
+            {
+                isValid = false;
             }
         }
 

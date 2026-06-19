@@ -21,6 +21,7 @@
 
     <ItemGroup>
       <Folder Include="graphs\hog\" />
+      <Folder Include="graphs\hog\database\" />
     </ItemGroup>
 
 </Project>

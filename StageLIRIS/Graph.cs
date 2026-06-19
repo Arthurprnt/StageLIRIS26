@@ -124,7 +124,7 @@ public class Graph
         return dist;
     }
     
-    public int[] GetMaxDistFromVertice(int vert)
+    public int[] GetMaxDistFromVertice(int vert, bool[] startVisited)
     {
         // Renvoie seulement la plus grande distance entre le sommet Vert et un autre sommet du graphe
         // Utile lors du calcul du diamètre pour ne pas reparcourir un tableau inutilement
@@ -133,8 +133,9 @@ public class Graph
         int maxNeigh = vert;
         int[] dist = new int[NbVert];
         bool[] visited = new bool[NbVert];
-
+        
         visited[vert] = true;
+        startVisited[vert] = true;
         Queue<int> queue = new Queue<int>();
         queue.Enqueue(vert);
         dist[vert] = 0;
@@ -145,16 +146,14 @@ public class Graph
             for (int i = 0; i < Vois[current].Count; i++)
             {
                 int neigh = Vois[current][i];
-                if (neigh != current && !visited[neigh])
+                if (!visited[neigh])
                 {
                     visited[neigh] = true;
+                    startVisited[neigh] = true;
                     int newDist = dist[current] + 1;
                     dist[neigh] = newDist;
-                    if (newDist > maxDist)
-                    {
-                        maxDist = newDist;
-                        maxNeigh = neigh;
-                    }
+                    maxDist = newDist;
+                    maxNeigh = neigh;
                     queue.Enqueue(neigh);
                 }
             }
@@ -162,9 +161,18 @@ public class Graph
         return [maxDist, maxNeigh];
     }
     
+    public int[] GetMaxDistFromVertice(int vert)
+    {
+        bool[] visited = new bool[NbVert];
+        return GetMaxDistFromVertice(vert, visited);
+    }
+    
     public int GetDiameter(List<int> verts) {
         // Stock dans verts les deux extrémités du diamètre
-        verts.Add(-1); verts.Add(-1);
+        if (verts.Count < 2)
+        {
+            verts.Add(-1); verts.Add(-1);
+        }
         
         int maxi = -1;
         for(int i=0; i<NbVert; i++)
@@ -179,6 +187,52 @@ public class Graph
             }
         }
         return maxi;
+    }
+
+    public int EstimateDiameter(int nbIteration, List<int> verts)
+    {
+        if (nbIteration < 1) throw new Exception("Il faut au moins itérer une fois sur le graph.");
+        // Stock dans verts les deux extrémités du diamètre
+        if (verts.Count < 2)
+        {
+            verts.Add(-1); verts.Add(-1);
+        }
+        
+        bool[] visited = new bool[NbVert];
+
+        Random rnd = new Random();
+        int selectedVertex = rnd.Next() % NbVert;
+        int diameter = 0;
+        
+        for (int i = 0; i < nbIteration; i++)
+        {
+            int[] maxs = GetMaxDistFromVertice(selectedVertex, visited);
+            diameter = maxs[0];
+            verts[0] = selectedVertex;
+            verts[1] = maxs[1];
+            selectedVertex = maxs[1];
+        }
+
+        for (int vert = 0; vert < NbVert; vert++)
+        {
+            if (!visited[vert])
+            {
+                for (int i = 0; i < nbIteration; i++)
+                {
+                    int[] maxs = GetMaxDistFromVertice(selectedVertex, visited);
+                    if (maxs[0] > diameter)
+                    {
+                        diameter = maxs[0]; 
+                        verts[0] = vert;
+                        verts[1] = maxs[1];
+                    }
+                    
+                }
+
+            }
+        }
+        
+        return diameter;
     }
     
     public int GetDiameter()
