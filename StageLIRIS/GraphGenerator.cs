@@ -22,7 +22,7 @@ public class GraphGenerator
         int nbVertices = int.Parse(lines[0].Split(' ')[1]);
         int nbEdges = int.Parse(lines[1].Split(' ')[1]);
         
-        Graph graph = new Graph(nbVertices);
+        Graph graph = new Graph(nbVertices, filePath);
         
         // Traitement des aretes
         for (int i = 3; i < 3 + nbEdges; i++)
@@ -42,7 +42,7 @@ public class GraphGenerator
         // Données graph
         int nbVertices = lines.Length;
         
-        Graph graph = new Graph(nbVertices);
+        Graph graph = new Graph(nbVertices, filePath);
         
         // Traitement des aretes
         for (int i = 0; i < nbVertices; i++)
@@ -53,6 +53,33 @@ public class GraphGenerator
             for (int j = 0; j < toList.Length; j++)
             {
                 int to = int.Parse(toList[j])-1;
+                graph.AddEdge(from, to);
+            }
+        }
+
+        return graph;
+    }
+
+    public static Graph GetListgGraph(string filePath, int startLine, int endLine)
+    {
+        // Génère un graphe à partir d'un fichier output.txt généré par listg
+        // Pioche le graphe qui se situe entre les lignes startLine et endLine
+        string[] lines = File.ReadLines(filePath).Skip(startLine-1).Take(endLine - startLine + 1).ToArray();
+
+        // Données graph
+        int nbVertices = lines.Length;
+
+        Graph graph = new Graph(nbVertices, filePath);
+
+        // Traitement des aretes
+        for (int i = 0; i < nbVertices; i++)
+        {
+            int from = int.Parse(lines[i].Split(" : ")[0].Replace(" ", ""));
+            string[] toList = lines[i].Split(" : ")[1].Split(" ");
+
+            for (int j = 0; j < toList.Length; j++)
+            {
+                int to = int.Parse(toList[j].Replace(";", ""));
                 graph.AddEdge(from, to);
             }
         }

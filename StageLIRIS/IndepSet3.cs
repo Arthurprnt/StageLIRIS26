@@ -43,6 +43,12 @@ public class IndepSet3
         // Getter du tableau States
         return (States & (1L << ind)) != 0;
     }
+    
+    public static bool Get(long states, int ind)
+    {
+        // Getter du tableau States
+        return (states & (1L << ind)) != 0;
+    }
 
     public IndepSet3 Clone()
     {
@@ -62,6 +68,19 @@ public class IndepSet3
             }
         }
         Console.WriteLine();
+    }
+    
+    public static string toString(long states)
+    {
+        string result = "";
+        for (int i = 0; i < 64; i++)
+        {
+            if (Get(states, i))
+            {
+                result += i + " ";
+            }
+        }
+        return result;
     }
     
     public void WriteStates()

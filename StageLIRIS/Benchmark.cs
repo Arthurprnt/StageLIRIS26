@@ -4,12 +4,30 @@ namespace StageLIRIS;
 
 public class Benchmark
 {
+    static string RunCommand(string command, string args = "")
+    {
+        var psi = new ProcessStartInfo();
+        psi.FileName = command;
+        psi.Arguments = args;
+        psi.RedirectStandardOutput = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+
+        using var process = Process.Start(psi);
+
+        process.WaitForExit();
+
+        var output = process.StandardOutput.ReadToEnd();
+
+        return output;
+    }
+    
     public static double roundTo2Decimals(double nb)
     {
         return Math.Truncate(nb * 100) / 100;
     }
     
-    public static long BuildReconfigGraph(Graph graph, int k, char mode, int[] shows)
+    public static int BuildReconfigGraph(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -57,10 +75,10 @@ public class Benchmark
             Console.WriteLine("========================================");
             Console.WriteLine();
         }
-        return stopwatch.ElapsedMilliseconds;
+        return diameter;
     }
 
-    public static long BuildReconfigGraph2(Graph graph, int k, char mode, int[] shows)
+    public static int BuildReconfigGraph2(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -108,10 +126,10 @@ public class Benchmark
             Console.WriteLine("========================================");
             Console.WriteLine();
         }
-        return stopwatch.ElapsedMilliseconds;
+        return diameter;
     }
 
-    public static long BuildReconfigGraph3(Graph graph, int k, char mode, int[] shows)
+    public static int BuildReconfigGraph3(Graph graph, int k, char mode, int[] shows)
     {
         // Chronomètre
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -148,7 +166,8 @@ public class Benchmark
         if(shows[0] == 1)Console.WriteLine("Il y a " + graphIs.NbEdges + " arêtes dans le graph des IS");
         if(shows[0] == 1) Console.WriteLine("Début du calcul du diamètre du graph des IS...");
         List<int> vertsDiametre = new List<int>();
-        int diameter = graphIs.EstimateDiameter((int)Math.Sqrt(graphIs.NbVert), vertsDiametre);
+        int nbIteration = (int)Math.Sqrt(graphIs.NbVert);
+        int diameter = graphIs.EstimateDiameter(nbIteration, vertsDiametre);
         //diameter = graphIs.GetDiameter(vertsDiametre);
         stopwatch.Stop();
         if(shows[0] == 1)
@@ -160,11 +179,11 @@ public class Benchmark
             Console.WriteLine("========================================");
             Console.WriteLine();
         }
-        if(graphReconfig.isValid) return stopwatch.ElapsedMilliseconds;
+        if(graphReconfig.isValid) return diameter;
         return -1;
     }
 
-    public static long GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version)
+    public static int GetDiamOfIsGraph(string filePath, int k, char mode, int[] shows, int version)
     {
         // Mode: Token sliding -> S | Token jumping -> J
         // /!\ Le mode jumping n'est implémenté que pour la v3 (car la seule vrm opti)
@@ -174,6 +193,16 @@ public class Benchmark
         if(shows[0] == 1) Console.WriteLine("Construction du graph...");
         Graph graph = GraphGenerator.GetHogGraph(filePath);
         if(shows[0] == 1) Console.WriteLine("Fin de la construction du graph");
+
+        return GetDiamOfIsGraph(graph, k, mode, shows, version);
+    }
+    
+    public static int GetDiamOfIsGraph(Graph graph, int k, char mode, int[] shows, int version)
+    {
+        // Mode: Token sliding -> S | Token jumping -> J
+        // /!\ Le mode jumping n'est implémenté que pour la v3 (car la seule vrm opti)
+        // Format shows: [showSteps, showMats, showAdjLst, showIS]
+        if(shows[0] == 1) Console.WriteLine("===========| PreGeneratedGraph | k=" + k + " | mode=" + mode + " | v" + version + " |===========");
 
         if(shows[1] == 1)
         {
@@ -201,8 +230,11 @@ public class Benchmark
 
     public static void RunBenchmark(int tailleGraMin, int tailleGraMax, int tailleIsMin, int tailleIsMax, char mode)
     {
+        // Estime le temps moyen pour d'éxécution pour les graphes tels que:
+        // tailleGraMin <= nbSommet <= tailleGraMax
+        // tailleIsMin <= tailleIS <= tailleIsMax
         string[] dbDirectories = Directory.GetDirectories("graphs/hog/database/");
-        Console.WriteLine("Temps moyen de la création du graphe en fonctions des tailles de graphe (en ms):");
+        Console.WriteLine("Temps moyen d'éxécution en fonctions des tailles de graphe (en ms):");
         Console.Write("NbVert\t\t");
         for (int i = tailleIsMin; i <= tailleIsMax; i++)
         {
@@ -242,5 +274,68 @@ public class Benchmark
                 }
             }
         }
+    }
+
+    public static int GetBiggestDiameterGraph(string folder, int k, char mode, bool showGraphs=true)
+    {
+        // Renvoie le diamètre max du graphe IS trouvé dans le dossier folder
+        // Peut également afficher les graphes ayant ce diamètre si showGraphs est true
+        List<Graph> graphs = new List<Graph>();
+        int maxDiam = 0;
+        
+        string[] files = Directory.GetFiles(folder);
+        foreach (string file in files)
+        {
+            Graph graphe = GraphGenerator.GetHogGraph(file);
+            int diameter = GetDiamOfIsGraph(graphe, k, mode, [0, 0, 0, 0], 3);
+            if (diameter > maxDiam)
+            {
+                graphs = new List<Graph>();
+                graphs.Add(graphe);
+                maxDiam = diameter;
+            } else if (diameter == maxDiam)
+            {
+                graphs.Add(graphe);
+            }
+        }
+        if (showGraphs)
+        {
+            Console.WriteLine("Plus gros diamètre trouvé: " + maxDiam);
+            Console.WriteLine("Liste des graphes (" + graphs.Count + "):");
+            foreach (Graph graph in graphs)
+            {
+                Console.WriteLine(graph.Name);
+                Console.WriteLine("NbVert: " + graph.NbVert + ", NbEdge: " + graph.NbEdges);
+                Console.WriteLine("degMin: " + graph.DegMin() + ", degMax: " + graph.DegMax());
+                Console.WriteLine("nbIs: " + graph.NbIs);
+                Console.WriteLine(graph.ToDot());
+                Console.WriteLine(); Console.WriteLine(); Console.WriteLine();
+            }
+        }
+
+        return maxDiam;
+    }
+    
+    public static int IncrGetBiggestDiameterGraph(int n, int k, char mode, bool showGraphs=true, int prevBiggestDiam=0)
+    {
+        // Automatise la fonction GetBiggestDiameterGraph
+        Console.WriteLine("Premier nettoyage du répertoire en cours...");
+        RunCommand("rm", "-rf graphes");
+        RunCommand("rm", "-rf graphes_aretes");
+        Console.WriteLine("Fin du nettoyage, début du script...");
+        int biggestDiam = -1;
+        RunCommand("rm", "-rf graphs_generator/graphes");
+        RunCommand("rm", "-rf graphs_generator/graphes_aretes");
+        RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*(prevBiggestDiam-1))+" graphs_generator/code.txt");
+        RunCommand("/bin/listg", " -q graphs_generator/code.txt graphs_generator/output.txt");
+        Directory.SetCurrentDirectory("graphs_generator");
+        RunCommand("./trad");
+        Directory.SetCurrentDirectory("..");
+        int currDiam = GetBiggestDiameterGraph("graphs_generator/graphes", k, mode, showGraphs);
+        if (currDiam > biggestDiam)
+        {
+            biggestDiam = currDiam;
+        }
+        return biggestDiam;
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.Text;
 
 namespace StageLIRIS;
 
@@ -16,6 +17,7 @@ public class GraphReconfig3
     public readonly char Mode;
     public List<IndepSet3> AllIs;
     public Dictionary<long, int> IsToIndex = new Dictionary<long, int>();
+    public Dictionary<int, long> IndexToIs = new Dictionary<int, long>();
     public Graph GraphReconfig = new Graph(0);
     public bool isValid = true;
 
@@ -24,6 +26,32 @@ public class GraphReconfig3
         Graph = graph;
         K = k;
         Mode = mode;
+    }
+
+    public string ToDot()
+    {
+        // Renvoie le grapheReconfig sous le format .dot
+        StringBuilder dot = new StringBuilder();
+        dot.AppendLine("graph G {");
+
+        for (int i = 0; i < GraphReconfig.Vois.Count; i++)
+        {
+            for (int j = 0; j < GraphReconfig.Vois[i].Count; j++)
+            {
+                if(GraphReconfig.Vois[i][j] > i) dot.AppendLine($"  \"{IndepSet3.toString(IndexToIs[i])}\" -- \"{IndepSet3.toString(IndexToIs[GraphReconfig.Vois[i][j]])}\";");
+            }
+        }
+
+        dot.AppendLine("}");
+        return dot.ToString();
+    }
+
+    public void WriteDict()
+    {
+        foreach (var key in IsToIndex.Keys)
+        {
+            Console.WriteLine(IndepSet3.toString(key) + ": " + IsToIndex[key]);
+        }
     }
 
     public bool isIndepInDict(IndepSet3 indepSet)
@@ -40,8 +68,10 @@ public class GraphReconfig3
         int indepSetId = GraphReconfig.NbVert;
         // On sauvegarde sont indice de sommet associé
         IsToIndex.Add(indepSet.States, indepSetId);
+        IndexToIs.Add(indepSetId, indepSet.States);
         AllIs.Add(indepSet.Clone());
         GraphReconfig.AddVertex();
+        Graph.NbIs++;
         return indepSetId;
     }
     

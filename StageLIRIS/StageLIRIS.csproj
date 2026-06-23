@@ -11,17 +11,12 @@
         <None Update="graphs/**/*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Update="graphs\gra\graph.txt">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update="graphs\gra\graph2.txt">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
+        <None Include="graphs_generator\**\*" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="graphs\hog\" />
-      <Folder Include="graphs\hog\database\" />
+      <Folder Include="graphs\" />
+      <Folder Include="graphs_generator\" />
     </ItemGroup>
 
 </Project>

@@ -1,7 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
-
 using StageLIRIS;
 
-//Benchmark.RunBenchmark(50, 64, 1, 3,'S');
-Benchmark.GetDiamOfIsGraph("graphs/hog/database/64/graphe_0001.txt", 3, 'S', [1, 0, 0, 0], 3);
-Benchmark.GetDiamOfIsGraph("graphs/hog/database/64/graphe_0001.txt", 3, 'J', [1, 0, 0, 0], 3);
+int n = 8;
+int k = 3;
+Console.WriteLine("Plus gros diamètre trouvé pour n="+n+", k="+k+": "+Benchmark.IncrGetBiggestDiameterGraph(n, k, 'J', false, 7));
+
+//Benchmark.RunBenchmark(8, 10, 1, 3,'S');

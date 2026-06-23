@@ -1,17 +1,21 @@
+using System.Text;
+
 namespace StageLIRIS;
 
 public class Graph
 {
     // La matrice est valide tant que AddVert() n'est pas appelé
     // Il faut utilise RebuildMat() pour la reconstruire
+    public string Name;
     public int[,] Mat;
     public List<List<int>> Vois;
     public int NbVert;
     public int NbEdges;
     // Indique si la matrice est valide ou non
     public bool IsMatSync = true;
+    public int NbIs = 0;
 
-    public Graph(int nbVertices)
+    public Graph(int nbVertices, string name)
     {
         Mat = new int[nbVertices, nbVertices];
         Vois = new List<List<int>>(nbVertices);
@@ -20,7 +24,10 @@ public class Graph
             Vois.Add(new List<int>());
         }
         NbVert = nbVertices;
+        Name = name;
     }
+    
+    public Graph(int nbVertices) : this(nbVertices, "NoName") {}
 
     public void WriteMat()
     {
@@ -45,6 +52,24 @@ public class Graph
             }
             Console.WriteLine("]");
         }
+    }
+    
+    public string ToDot()
+    {
+        // Renvoie le graphe sous le format .dot
+        StringBuilder dot = new StringBuilder();
+        dot.AppendLine("graph G {");
+
+        for (int i = 0; i < Vois.Count; i++)
+        {
+            for (int j = 0; j < Vois[i].Count; j++)
+            {
+                if(Vois[i][j] > i) dot.AppendLine($"  \"{i}\" -- \"{Vois[i][j]}\";");
+            }
+        }
+
+        dot.AppendLine("}");
+        return dot.ToString();
     }
 
     public void AddVertex()
@@ -191,6 +216,7 @@ public class Graph
 
     public int EstimateDiameter(int nbIteration, List<int> verts)
     {
+        if (NbVert <= 1) return 0;
         if (nbIteration < 1) throw new Exception("Il faut au moins itérer une fois sur le graph.");
         // Stock dans verts les deux extrémités du diamètre
         if (verts.Count < 2)
@@ -239,5 +265,27 @@ public class Graph
     {
         // Polymorphisme
         return GetDiameter(new List<int>());
+    }
+
+    public int DegMin()
+    {
+        int mini = Vois[0].Count;
+        for (int i = 1; i < Vois.Count; i++)
+        {
+            if (Vois[i].Count < mini) mini = Vois[i].Count;
+        }
+
+        return mini;
+    }
+    
+    public int DegMax()
+    {
+        int maxi = Vois[0].Count;
+        for (int i = 1; i < Vois.Count; i++)
+        {
+            if (Vois[i].Count > maxi) maxi = Vois[i].Count;
+        }
+
+        return maxi;
     }
 }
