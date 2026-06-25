@@ -1,49 +1,68 @@
+using System.Collections;
+using System.Collections.Specialized;
+
 namespace StageLIRIS;
 
 public class IndepSet
 {
-    public readonly Graph Graph;
-    // Tableau contenant tous les sommets
-        // 0: Le sommet n'est pas dans l'IS
-        // 1: Il est dedans
-    public int[] States;
-    public readonly int MaxSize;
-    public int CurrSize;
+    // Optimisation de l'IndepSet1
+    // Les états sont stocké sous forme de bits dans un long
+        // -> Plus comptacte
+        // -> Inconvénient: pas plus de 64 sommets dans le graphe de base
     
+    public readonly Graph Graph;
+    public long States = 0L;
+    public readonly int MaxSize;
+    public int CurrSize = 0;
+
     public IndepSet(Graph graph, int k)
     {
         this.Graph = graph;
-        States = new int[graph.NbVert];
         MaxSize = k;
     }
-
+    
     public override bool Equals(object? obj)
     {
         if (obj.GetType() != typeof(IndepSet))
         {
             return false;
         }
-        else
-        {
-            return ((IndepSet)obj).States.Equals(this.States) && ((IndepSet)obj).Graph.Equals(this.Graph) && ((IndepSet)obj).MaxSize == this.MaxSize && ((IndepSet)obj).CurrSize == this.CurrSize;
-        }
+        IndepSet oth = (IndepSet)obj;
+        return States == oth.States &&  MaxSize == oth.MaxSize && CurrSize == oth.CurrSize;
+    }
+
+    public void Set(int ind, bool val)
+    {
+        // Setter du tableau States
+        if (val) States += 1L << ind;
+        else States -= 1L << ind;
+    }
+
+    public bool Get(int ind)
+    {
+        // Getter du tableau States
+        return (States & (1L << ind)) != 0;
+    }
+    
+    public static bool Get(long states, int ind)
+    {
+        // Getter du tableau States
+        return (states & (1L << ind)) != 0;
     }
 
     public IndepSet Clone()
     {
         IndepSet newSet = new IndepSet(Graph, MaxSize);
-        for (int i = 0; i < Graph.NbVert; i++)
-        {
-            newSet.States[i] = States[i];
-        }
+        newSet.CurrSize = CurrSize;
+        newSet.States = States;
         return newSet;
     }
-
+    
     public void Write()
     {
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            if (States[i] == 1)
+            if (Get(i))
             {
                 Console.Write(i + " ");
             }
@@ -51,46 +70,65 @@ public class IndepSet
         Console.WriteLine();
     }
     
+    public static string toString(long states)
+    {
+        string result = "";
+        for (int i = 0; i < 64; i++)
+        {
+            if (Get(states, i))
+            {
+                result += i + " ";
+            }
+        }
+        return result;
+    }
+    
     public void WriteStates()
     {
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            Console.Write(States[i] + " ");
+            Console.Write(Get(i) + " ");
         }
         Console.WriteLine();
     }
-
+    
     public bool CanAddVert(int vert)
     {
         // Renvoie si l'IS serait valide en ajouter le sommet vert
         // Pour chaque voisin du sommet vert, on vérifie s'il est déjà dans l'IS
         for (int i = 0; i < Graph.Vois[vert].Count; i++)
         {
-            if (Graph.Vois[vert][i] != vert && States[Graph.Vois[vert][i]] == 1)
+            if (Graph.Vois[vert][i] != vert && Get(Graph.Vois[vert][i]))
             {
                 return false;
             }
         }
         return true;
     }
-
+    
     public void AddVert(int vert)
     {
         // Ajoute le sommet à l'IS
-        if (States[vert] == 0)
+        if (!Get(vert) && CurrSize < MaxSize)
         {
-            States[vert] = 1;
+            Set(vert, true);
             CurrSize++;
         }
     }
-
+    
     public void RemoveVert(int vert)
     {
         // L'enlève de l'IS
-        if (States[vert] == 1)
+        if (Get(vert))
         {
-            States[vert] = 0;
+            Set(vert, false);
             CurrSize--;
         }
+    }
+
+    public void ReplaceVert(int oldVert, int newVert)
+    {
+        RemoveVert(oldVert);
+        AddVert(newVert);
     }
 }

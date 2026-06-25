@@ -1,6 +1,5 @@
+.idea/
 StageLIRIS/bin
 StageLIRIS/obj
-.idea
-StageLIRIS/graphs/hog/database
-StageLIRIS/graphs_generator/code.txt
-StageLIRIS/graphs_generator/output.txt
+StageLIRIS/temp
+StageLIRIS/graphs_found
