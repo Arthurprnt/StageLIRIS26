@@ -8,10 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Update="graphs/**/*">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="graphs_generator\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <Compile Remove="graphs\**;graphs_generator\**" />
+        <Content Remove="graphs\**;graphs_generator\**" />
+        <None Remove="graphs\**;graphs_generator\**" />
     </ItemGroup>
 
     <ItemGroup>

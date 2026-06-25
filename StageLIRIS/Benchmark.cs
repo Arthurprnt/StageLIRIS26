@@ -315,23 +315,116 @@ public class Benchmark
 
         return maxDiam;
     }
+
+    public static int GetBiggestDiameterGraphFromFile(string file, int k, char mode, bool showGraphs=true)
+    {
+        // Renvoie le diamètre max du graphe IS trouvé dans le dossier folder
+        // Peut également afficher les graphes ayant ce diamètre si showGraphs est true
+        List<Graph> graphs = new List<Graph>();
+        int maxDiam = 0;
+        
+        int ind = 1;
+        int nbLignes = File.ReadLines(file).Count();
+
+        bool readingEdges = false;
+        int nbVert = 0;
+        int vertsDone = 0;
+        string[] graphLines = new string[0];
+
+        foreach (string line in File.ReadLines(file))
+        {
+          if(!readingEdges) {
+            nbVert = int.Parse(line);
+            vertsDone = 0;
+            readingEdges = true;
+            graphLines = new string[nbVert];
+          } else {
+            graphLines[vertsDone] = line;
+            vertsDone++;
+            if(vertsDone == nbVert) {
+              Graph graphe = GraphGenerator.GetListgGraph(graphLines);
+              int diameter = GetDiamOfIsGraph(graphe, k, mode, [0, 0, 0, 0], 3);
+              if (diameter > maxDiam)
+              {
+                graphs = new List<Graph>();
+                graphs.Add(graphe);
+                maxDiam = diameter;
+              } else if (diameter == maxDiam)
+              {
+                graphs.Add(graphe);
+              }
+              ind += nbVert+1;
+              readingEdges = false;
+            }
+          }
+        }
+
+        /*while(ind <= nbLignes)
+        {
+            int nbVert = int.Parse(File.ReadLines(file).Skip(ind-1).Take(1).ToArray()[0]);
+            Graph graphe = GraphGenerator.GetListgGraph(file, ind+1, ind+nbVert);
+            int diameter = GetDiamOfIsGraph(graphe, k, mode, [0, 0, 0, 0], 3);
+            if (diameter > maxDiam)
+            {
+                graphs = new List<Graph>();
+                graphs.Add(graphe);
+                maxDiam = diameter;
+            } else if (diameter == maxDiam)
+            {
+                graphs.Add(graphe);
+            }
+            ind += nbVert+1;
+        }*/
+        if (showGraphs)
+        {
+            Console.WriteLine("Plus gros diamètre trouvé: " + maxDiam);
+            Console.WriteLine("Liste des graphes (" + graphs.Count + "):");
+            foreach (Graph graph in graphs)
+            {
+                Console.WriteLine(graph.Name);
+                Console.WriteLine("NbVert: " + graph.NbVert + ", NbEdge: " + graph.NbEdges);
+                Console.WriteLine("degMin: " + graph.DegMin() + ", degMax: " + graph.DegMax());
+                Console.WriteLine("nbIs: " + graph.NbIs);
+                Console.WriteLine(graph.ToDot());
+                Console.WriteLine(); Console.WriteLine(); Console.WriteLine();
+            }
+        }
+
+        return maxDiam;
+    }
     
-    public static int IncrGetBiggestDiameterGraph(int n, int k, char mode, bool showGraphs=true, int prevBiggestDiam=0)
+    public static int IncrGetBiggestDiameterGraph(int n, int k, char mode, bool showGraphs=true, int prevBiggestDiam=1)
     {
         // Automatise la fonction GetBiggestDiameterGraph
         Console.WriteLine("Premier nettoyage du répertoire en cours...");
-        RunCommand("rm", "-rf graphes");
-        RunCommand("rm", "-rf graphes_aretes");
-        Console.WriteLine("Fin du nettoyage, début du script...");
-        int biggestDiam = -1;
         RunCommand("rm", "-rf graphs_generator/graphes");
         RunCommand("rm", "-rf graphs_generator/graphes_aretes");
+        Console.WriteLine("Fin du nettoyage, début du script...");
+        int biggestDiam = -1;
         RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*(prevBiggestDiam-1))+" graphs_generator/code.txt");
         RunCommand("/bin/listg", " -q graphs_generator/code.txt graphs_generator/output.txt");
         Directory.SetCurrentDirectory("graphs_generator");
         RunCommand("./trad");
         Directory.SetCurrentDirectory("..");
         int currDiam = GetBiggestDiameterGraph("graphs_generator/graphes", k, mode, showGraphs);
+        Console.WriteLine("Dernier nettoyage du répertoire en cours...");
+        RunCommand("rm", "-rf graphs_generator/graphes");
+        RunCommand("rm", "-rf graphs_generator/graphes_aretes");
+        Console.WriteLine("Fin du nettoyage...");
+        if (currDiam > biggestDiam)
+        {
+            biggestDiam = currDiam;
+        }
+        return biggestDiam;
+    }
+
+    public static int IncrGetBiggestDiameterGraphFromFile(int n, int k, char mode, bool showGraphs=true, int prevBiggestDiam=1)
+    {
+        // Automatise la fonction GetBiggestDiameterGraph
+        int biggestDiam = -1;
+        RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*(prevBiggestDiam-1))+" graphs_generator/code.txt");
+        RunCommand("/bin/listg", " -q graphs_generator/code.txt graphs_generator/output.txt");
+        int currDiam = GetBiggestDiameterGraphFromFile("graphs_generator/output.txt", k, mode, showGraphs);
         if (currDiam > biggestDiam)
         {
             biggestDiam = currDiam;

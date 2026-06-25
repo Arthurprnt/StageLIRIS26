@@ -60,16 +60,15 @@ public class GraphGenerator
         return graph;
     }
 
-    public static Graph GetListgGraph(string filePath, int startLine, int endLine)
+    public static Graph GetListgGraph(string[] lines)
     {
         // Génère un graphe à partir d'un fichier output.txt généré par listg
         // Pioche le graphe qui se situe entre les lignes startLine et endLine
-        string[] lines = File.ReadLines(filePath).Skip(startLine-1).Take(endLine - startLine + 1).ToArray();
-
+        
         // Données graph
         int nbVertices = lines.Length;
 
-        Graph graph = new Graph(nbVertices, filePath);
+        Graph graph = new Graph(nbVertices);
 
         // Traitement des aretes
         for (int i = 0; i < nbVertices; i++)
