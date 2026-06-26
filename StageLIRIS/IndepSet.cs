@@ -23,12 +23,16 @@ public class IndepSet
     
     public override bool Equals(object? obj)
     {
-        if (obj.GetType() != typeof(IndepSet))
+        if (obj is not IndepSet oth)
         {
             return false;
         }
-        IndepSet oth = (IndepSet)obj;
         return States == oth.States &&  MaxSize == oth.MaxSize && CurrSize == oth.CurrSize;
+    }
+
+    public override int GetHashCode()
+    {
+      return States.GetHashCode();
     }
 
     public void Set(int ind, bool val)

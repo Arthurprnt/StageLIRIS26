@@ -60,6 +60,27 @@ public class GraphGenerator
         return graph;
     }
 
+    public static Graph GetDotGraph(string filePath)
+    {
+      // Génère un graphe à partir d'un fichier au format .dot
+      string[] lines = File.ReadAllLines(filePath);
+
+      Graph graph = new Graph(0, filePath);
+
+      for(int i=1; i<lines.Count()-1; i++)
+      {
+        string[] lineSplit = lines[i].Split('"');
+        int from = int.Parse(lineSplit[1]);
+        int to = int.Parse(lineSplit[3]);
+        while(graph.NbVert < from+1 || graph.NbVert < to+1)
+        {
+          graph.AddVertex();
+        }
+        graph.AddEdge(from, to);
+      }
+      return graph;
+    }
+
     public static Graph GetListgGraph(string[] lines)
     {
         // Génère un graphe à partir d'un fichier output.txt généré par listg

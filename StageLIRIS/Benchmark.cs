@@ -15,11 +15,13 @@ public class Benchmark
 
         using var process = Process.Start(psi);
 
-        process.WaitForExit();
-
-        var output = process.StandardOutput.ReadToEnd();
-
-        return output;
+        if(process != null)
+        {
+          process.WaitForExit();
+          var output = process.StandardOutput.ReadToEnd();
+          return output;
+        }
+        return "";
     }
     
     public static double roundTo2Decimals(double nb)

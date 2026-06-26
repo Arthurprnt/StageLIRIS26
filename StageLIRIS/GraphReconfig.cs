@@ -15,7 +15,7 @@ public class GraphReconfig
     public readonly Graph Graph;
     public readonly int K;
     public readonly char Mode;
-    public List<IndepSet> AllIs;
+    public List<IndepSet> AllIs = new List<IndepSet>();
     public Dictionary<long, int> IsToIndex = new Dictionary<long, int>();
     public Dictionary<int, long> IndexToIs = new Dictionary<int, long>();
     public Graph Reconfig = new Graph(0);
@@ -75,7 +75,7 @@ public class GraphReconfig
         return indepSetId;
     }
     
-    public IndepSet CalcIs(int from)
+    public IndepSet? CalcIs(int from)
     {
         // On calcul un IS de taille K contenant le sommet from
         // Sert à avoir un point de départ pour trouver les voisins ensuite
@@ -183,8 +183,11 @@ public class GraphReconfig
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet calcedIs = CalcIs(i);
-            CalcAllIsRecAux(calcedIs);
+            IndepSet? calcedIs = CalcIs(i);
+            if(calcedIs != null)
+            {
+              CalcAllIsRecAux(calcedIs);
+            }
         }
         
         return AllIs;
@@ -200,7 +203,7 @@ public class GraphReconfig
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet calcedIs = CalcIs(i);
+            IndepSet? calcedIs = CalcIs(i);
             if (calcedIs != null)
             {
                 if (calcedIs.CurrSize != calcedIs.MaxSize) 
