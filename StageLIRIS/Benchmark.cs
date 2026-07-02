@@ -147,4 +147,103 @@ public class Benchmark
         }
         return biggestDiam;
     }
+    
+    //COLORATION EDGES==================================================================================================
+
+    public static void ColorGraphs(int n)
+    {
+        if(!Directory.Exists("temp"))
+        {
+            Directory.CreateDirectory("temp");
+        }
+        if(n%2 == 0) RunCommand("/bin/geng", "-c -d"+Math.Floor((double)(n + 1)/2)+" -D"+Math.Floor((double)(n + 1)/2)+" "+n+" temp/code.txt");
+        else RunCommand("/bin/geng", "-c -d"+Math.Floor((double)(n + 1)/2)+" -D"+ (Math.Floor((double)(n + 1) / 2) + 1)+" "+n+" temp/code.txt");
+        RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
+
+        int idGraph = 0;
+        
+        bool readingEdges = false;
+        int nbVert = 0;
+        int vertsDone = 0;
+        string[] graphLines = new string[0];
+
+        foreach (string line in File.ReadLines("temp/output.txt"))
+        {
+            if (!readingEdges)
+            {
+                nbVert = int.Parse(line);
+                vertsDone = 0;
+                readingEdges = true;
+                graphLines = new string[nbVert];
+            }
+            else
+            {
+                graphLines[vertsDone] = line;
+                vertsDone++;
+                if (vertsDone == nbVert)
+                {
+                    Graph graphe = GraphGenerator.GetListgGraph(graphLines);
+                    Coloration coloration = new Coloration(graphe);
+                    //Console.WriteLine(idGraph);
+                    coloration.ColorGraph();
+                    readingEdges = false;
+                    idGraph++;
+                }
+            }
+        }
+        
+        RunCommand("rm", "-rf temp");
+        Console.WriteLine("Tous les graphes à "+n+" sont coloriables !");
+    }
+
+    public static void SplitColorGraphs(int n, int nbSplit)
+    {
+        if(!Directory.Exists("temp"))
+        {
+            Directory.CreateDirectory("temp");
+        }
+
+        for (int i = 0; i < nbSplit; i++)
+        {
+            if(n%2 == 0) RunCommand("/bin/geng", "-c -d"+Math.Floor((double)(n + 1)/2)+" -D"+Math.Floor((double)(n + 1)/2)+" "+n+" "+i+"/"+nbSplit+" temp/code.txt");
+            else RunCommand("/bin/geng", "-c -d"+Math.Floor((double)(n + 1)/2)+" -D"+ (Math.Floor((double)(n + 1) / 2) + 1)+" "+n+" "+i+"/"+nbSplit+" temp/code.txt");
+            RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
+
+            int idGraph = 0;
+        
+            bool readingEdges = false;
+            int nbVert = 0;
+            int vertsDone = 0;
+            string[] graphLines = new string[0];
+
+            foreach (string line in File.ReadLines("temp/output.txt"))
+            {
+                if (!readingEdges)
+                {
+                    nbVert = int.Parse(line);
+                    vertsDone = 0;
+                    readingEdges = true;
+                    graphLines = new string[nbVert];
+                }
+                else
+                {
+                    graphLines[vertsDone] = line;
+                    vertsDone++;
+                    if (vertsDone == nbVert)
+                    {
+                        Graph graphe = GraphGenerator.GetListgGraph(graphLines);
+                        Coloration coloration = new Coloration(graphe);
+                        //Console.WriteLine(idGraph);
+                        coloration.ColorGraph();
+                        readingEdges = false;
+                        idGraph++;
+                    }
+                }
+            }
+            Console.WriteLine((i + 1)+"/"+nbSplit+" "+"sont valides.");
+        }
+        
+        RunCommand("rm", "-rf temp");
+        Console.WriteLine("Tous les graphes à "+n+" sont coloriables !");
+    }
 }

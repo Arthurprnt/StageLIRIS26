@@ -215,10 +215,11 @@ public class GraphReconfig
                     queue.Enqueue(calcedIs);
                 }
             }
-            else
-            {
-                isValid = false;
-            }
+        }
+
+        if(queue.Count == 0)
+        {
+          isValid = false;
         }
 
         while (queue.Count > 0)
