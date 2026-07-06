@@ -214,15 +214,16 @@ public class Graph
         return maxi;
     }
 
-    public int EstimateDiameter(int nbIteration, List<int> verts)
+    public int EstimateDiameter()
     {
         if (NbVert <= 1) return 0;
+        int nbIteration = (int)Math.Sqrt(NbVert);
         if (nbIteration < 1) throw new Exception("Il faut au moins itérer une fois sur le graph.");
         // Stock dans verts les deux extrémités du diamètre
-        if (verts.Count < 2)
+        /*if (verts.Count < 2)
         {
             verts.Add(-1); verts.Add(-1);
-        }
+        }*/
         
         bool[] visited = new bool[NbVert];
 
@@ -234,8 +235,8 @@ public class Graph
         {
             int[] maxs = GetMaxDistFromVertice(selectedVertex, visited);
             diameter = maxs[0];
-            verts[0] = selectedVertex;
-            verts[1] = maxs[1];
+            /*verts[0] = selectedVertex;
+            verts[1] = maxs[1];*/
             selectedVertex = maxs[1];
         }
 
@@ -249,8 +250,8 @@ public class Graph
                     if (maxs[0] > diameter)
                     {
                         diameter = maxs[0]; 
-                        verts[0] = vert;
-                        verts[1] = maxs[1];
+                        /*verts[0] = vert;
+                        verts[1] = maxs[1];*/
                     }
                     
                 }
@@ -287,5 +288,22 @@ public class Graph
         }
 
         return maxi;
+    }
+
+    public int CountTriangles()
+    {
+        int somme = 0;
+        for (int i = 0; i < NbVert; i++)
+        {
+            for (int j = i+1; j < NbVert; j++)
+            {
+                for (int k = j + 1; k < NbVert; k++)
+                {
+                    if(Mat[i, j] == 1 && Mat[j, k] == 1 && Mat[k, i] == 1) somme++;
+                }
+            }
+        }
+
+        return somme;
     }
 }

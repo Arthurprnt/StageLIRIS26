@@ -47,12 +47,12 @@ public class GraphGenerator
         // Traitement des aretes
         for (int i = 0; i < nbVertices; i++)
         {
-            int from = int.Parse(lines[i].Split(": ")[0])-1;
+            int from = int.Parse(lines[i].Split(": ")[0]);
             string[] toList = lines[i].Split(": ")[1].Split(" ");
 
             for (int j = 0; j < toList.Length; j++)
             {
-                int to = int.Parse(toList[j])-1;
+                int to = int.Parse(toList[j]);
                 graph.AddEdge(from, to);
             }
         }

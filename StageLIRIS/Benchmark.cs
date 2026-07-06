@@ -29,23 +29,22 @@ public class Benchmark
         return Math.Truncate(nb * 100) / 100;
     }
 
-    public static int GetDiamOfIsGraph(Graph graph, int k, char mode)
+    public static int GetDiamOfIsGraph(Graph graph, int k, char mode, bool estimate)
     {
         // Mode: Token sliding -> S | Token jumping -> J
         GraphReconfig graphReconfig = new GraphReconfig(graph, k, mode);
         graphReconfig.CalcAllIsIte();
         Graph graphIs = graphReconfig.Reconfig;
-
-        List<int> vertsDiametre = new List<int>();
-        int nbIteration = (int)Math.Sqrt(graphIs.NbVert);
-        int diameter = graphIs.EstimateDiameter(nbIteration, vertsDiametre);
+        int diameter;
+        if(estimate) diameter = graphIs.EstimateDiameter();
+        else diameter = graphIs.GetDiameter();
         //diameter = graphIs.GetDiameter(vertsDiametre);
 
         if(graphReconfig.isValid) return diameter;
         return -1;
     }
 
-    public static int CalcBiggestDiameter(string file, int n, int k, char mode)
+    public static int CalcBiggestDiameter(string file, int n, int k, char mode, bool estimate)
     {
         // Renvoie le diamètre max du graphe IS trouvé
         // Ecrit les graphes trouvés dans le fichier graphs_found/n<n>k<k>.txt
@@ -72,7 +71,7 @@ public class Benchmark
             vertsDone++;
             if(vertsDone == nbVert) {
               Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-              int diameter = GetDiamOfIsGraph(graphe, k, mode);
+              int diameter = GetDiamOfIsGraph(graphe, k, mode, estimate);
               if (diameter > maxDiam)
               {
                 graphs = new List<Graph>();
@@ -88,7 +87,7 @@ public class Benchmark
           }
         }
 
-        Console.WriteLine("Plus gros diamètre trouvé: " + maxDiam);
+        Console.WriteLine("Plus gros diamètre trouvé pour les graphes de reconfig avec n="+n+" et k="+k+": " + maxDiam);
         if(!Directory.Exists("graphs_found"))
         {
           Directory.CreateDirectory("graphs_found");
@@ -108,9 +107,10 @@ public class Benchmark
         return maxDiam;
     }
 
-    public static int GetBiggestDiameterGraph(int n, int k, char mode, int prevBiggestDiam=0)
+    public static int GetBiggestDiameterGraph(int n, int k, char mode, bool estimate, int prevBiggestDiam=0)
     {
         // Automatise la fonction CalcBiggestDiameterFromFolder
+        // prevBiggestDiam correspond au plus gros diamètre trouvé pour (n-1) avec le même k
         int biggestDiam = -1;
         if(!Directory.Exists("temp"))
         {
@@ -118,7 +118,7 @@ public class Benchmark
         }
         RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" temp/code.txt");
         RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
-        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode);
+        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode, estimate);
         RunCommand("rm", "-rf temp");
         if (currDiam > biggestDiam)
         {
@@ -127,10 +127,12 @@ public class Benchmark
         return biggestDiam;
     }
 
-    public static int EstimateBiggestDiameterGraph(int n, int k, char mode, int prevBiggestDiam=0)
+    public static int EstimateBiggestDiameterGraph(int n, int k, char mode, bool estimate, int prevBiggestDiam=0)
     {
         // Automatise la fonction CalcBiggestDiameterFromFolder sans calculer tous les graphes
         // Génère un échantillon pour ensuite le tester comme le fait GetBiggestDiameterGraph
+        // prevBiggestDiam correspond au plus gros diamètre trouvé pour (n-1) avec le même k
+
         int biggestDiam = -1;
         if(!Directory.Exists("temp"))
         {
@@ -139,7 +141,7 @@ public class Benchmark
         string commande = "/bin/genrang -P1/2 "+n+" 10000000 | /bin/pickg -c1 -e"+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" > temp/code.g6";
         RunCommand("/bin/bash", $"-c \"{commande}\"");
         RunCommand("/bin/listg", " -q temp/code.g6 temp/output.txt");
-        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode);
+        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode, estimate);
         RunCommand("rm", "-rf temp");
         if (currDiam > biggestDiam)
         {
@@ -182,10 +184,25 @@ public class Benchmark
                 vertsDone++;
                 if (vertsDone == nbVert)
                 {
+                    Console.WriteLine("id graph: "+idGraph);
                     Graph graphe = GraphGenerator.GetListgGraph(graphLines);
                     Coloration coloration = new Coloration(graphe);
                     //Console.WriteLine(idGraph);
-                    coloration.ColorGraph();
+                    //Console.WriteLine("Graphe:");
+                    //graphe.WriteVois();
+                    try
+                    {
+                        coloration.ColorGraph();
+                    }
+                    catch (Exception)
+                    {
+                        coloration.BrutForceColoration();
+                    }
+                    /*Console.WriteLine("Graphe:");
+                    graphe.WriteVois();
+                    Console.WriteLine("Coloration:");
+                    coloration.WriteCol();
+                    Console.WriteLine("\n\n");*/
                     readingEdges = false;
                     idGraph++;
                 }
@@ -234,7 +251,14 @@ public class Benchmark
                         Graph graphe = GraphGenerator.GetListgGraph(graphLines);
                         Coloration coloration = new Coloration(graphe);
                         //Console.WriteLine(idGraph);
-                        coloration.ColorGraph();
+                        try
+                        {
+                            coloration.ColorGraph();
+                        }
+                        catch (Exception)
+                        {
+                            coloration.BrutForceColoration();
+                        }
                         readingEdges = false;
                         idGraph++;
                     }
@@ -245,5 +269,54 @@ public class Benchmark
         
         RunCommand("rm", "-rf temp");
         Console.WriteLine("Tous les graphes à "+n+" sont coloriables !");
+    }
+
+    public static void CountTriangles(int n)
+    {
+        if(!Directory.Exists("temp"))
+        {
+            Directory.CreateDirectory("temp");
+        }
+        if(n%2 == 0) RunCommand("/bin/geng", "-c -d"+Math.Floor((double)n/2)+" -D"+Math.Floor((double)n/2)+" "+n+" temp/code.txt");
+        else RunCommand("/bin/geng", "-c -d"+Math.Floor((double)(n + 1)/2)+" -D"+ (Math.Floor((double)(n + 1) / 2) + 1)+" "+n+" temp/code.txt");
+        RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
+
+        int idGraph = 0;
+        
+        bool readingEdges = false;
+        int nbVert = 0;
+        int vertsDone = 0;
+        string[] graphLines = new string[0];
+
+        foreach (string line in File.ReadLines("temp/output.txt"))
+        {
+            if (!readingEdges)
+            {
+                nbVert = int.Parse(line);
+                vertsDone = 0;
+                readingEdges = true;
+                graphLines = new string[nbVert];
+            }
+            else
+            {
+                graphLines[vertsDone] = line;
+                vertsDone++;
+                if (vertsDone == nbVert)
+                {
+                    Console.WriteLine("id graph: "+idGraph);
+                    Graph graphe = GraphGenerator.GetListgGraph(graphLines);
+                    
+                    Console.WriteLine("Graphe:");
+                    graphe.WriteVois();
+                    Console.WriteLine("Nb triangle: "+graphe.CountTriangles());
+                    Console.WriteLine("\n\n");
+                    
+                    readingEdges = false;
+                    idGraph++;
+                }
+            }
+        }
+        
+        RunCommand("rm", "-rf temp");
     }
 }
