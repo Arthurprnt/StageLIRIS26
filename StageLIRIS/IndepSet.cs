@@ -12,7 +12,7 @@ public class IndepSet
     
     public readonly Graph Graph;
     public long States = 0L;
-    public readonly int MaxSize;
+    public int MaxSize;
     public int CurrSize = 0;
 
     public IndepSet(Graph graph, int k)
@@ -64,7 +64,7 @@ public class IndepSet
     
     public void Write()
     {
-        for (int i = 0; i < Graph.NbVert; i++)
+        for (int i = 0; i < 64; i++)
         {
             if (Get(i))
             {

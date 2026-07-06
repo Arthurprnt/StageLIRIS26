@@ -16,8 +16,11 @@ static void ShowManual(string param)
 {
     Console.WriteLine("\n");
     Console.WriteLine("Error: Missing required argument '-"+param+" <value>'.");
-    Console.WriteLine("Usage: ./StageLIRIS -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
+    Console.WriteLine("Usage: ./StageLIRIS [upgrade -s <is_size> -a <alpha> -b <beta>] -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
     Console.WriteLine("Parameters:");
+    Console.WriteLine("upgrade: Execute the reconfig upgrading instead of finding a diameter. If used, must provide a file with the -f and -t flags.");
+    Console.WriteLine("-s <is_size>: The size of the following independent sets.");
+    Console.WriteLine("-a <alpha> | -b <beta>: The independent sets for the upgrade. Should be used like that: '-a 0 1 2' for the independent set {0, 1, 2}.");
     Console.WriteLine("-m <mode>: Can either be J or S. J is for token jumping and S is for token sliding.");
     Console.WriteLine("-n <nb_vert>: The number of vertices in the graph(s).");
     Console.WriteLine("-k <indep_size>: The size of the independent sets used for the reconfig graph(s).");
@@ -32,95 +35,186 @@ static void ShowManual(string param)
     Console.WriteLine("\n");
 }
 
-int modeIndex = Array.IndexOf(args, "-m");
-if (modeIndex != -1 && modeIndex + 1 < args.Length)
+int upIndex = Array.IndexOf(args, "updrade");
+if(upIndex == -1) upIndex = Array.IndexOf(args, "u");
+if(upIndex != -1)
 {
-    char mode = char.Parse(args[modeIndex + 1]);
-    int nIndex = Array.IndexOf(args, "-n");
-    if (nIndex != -1 && nIndex + 1 < args.Length)
+    // Using the upgrading mode
+    int fileIndex = Array.IndexOf(args, "-f");
+    if (fileIndex != -1 && fileIndex + 1 < args.Length)
     {
-        int n = int.Parse(args[nIndex + 1]);
-        int kIndex = Array.IndexOf(args, "-k");
-        if (kIndex != -1 && kIndex + 1 < args.Length)
+        string file = args[fileIndex + 1];
+        if (!File.Exists(file))
         {
-            bool calcDiam = false;
-            int calcIndex = Array.IndexOf(args, "-c");
-            if (calcIndex != -1)
+            ShowManual("f");
+        }
+        else
+        {
+            int fileTypeIndex = Array.IndexOf(args, "-t");
+            if (fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)
             {
-                calcDiam = true;
-            }
-            int k = int.Parse(args[kIndex + 1]);
-            int fileIndex = Array.IndexOf(args, "-f");
-            if (fileIndex != -1 && fileIndex + 1 < args.Length)
-            {
-                string file = args[fileIndex + 1];
-                if (!File.Exists(file))
+                string types = args[fileTypeIndex + 1].ToLower();
+                string[] possibleTypes = { "dot", "hog", "gra" };
+                if (possibleTypes.Contains(types))
                 {
-                    ShowManual("f");
+                    int sizeIndex = Array.IndexOf(args, "-s");
+                    if (sizeIndex != -1 && sizeIndex + 1 < args.Length)
+                    {
+                        int isSize = int.Parse(args[sizeIndex+1]);
+                        int alphaIndex = Array.IndexOf(args, "-a");
+                        if (alphaIndex != -1 && alphaIndex + isSize < args.Length)
+                        {
+                            int betaIndex = Array.IndexOf(args, "-b");
+                            if (betaIndex != -1 && betaIndex + isSize < args.Length)
+                            {
+                                Graph graphe = new Graph(1);
+                                switch (types)
+                                {
+                                    case "dot":
+                                        graphe = GraphGenerator.GetDotGraph(file);
+                                        break;
+                                    case "hog":
+                                        graphe = GraphGenerator.GetHogGraph(file);
+                                        break;
+                                    case "gra":
+                                        graphe = GraphGenerator.GetGraGraph(file);
+                                        break;
+                                }
+                                IndepSet alpha = new IndepSet(graphe, isSize);
+                                IndepSet beta = new IndepSet(graphe, isSize);
+                                for(int i=1; i<=isSize; i++)
+                                {
+                                  alpha.AddVert(int.Parse(args[alphaIndex+i]));
+                                  beta.AddVert(int.Parse(args[betaIndex+i]));
+                                }
+                                Graph upgradedGraph = graphe.UpgradeGraph(alpha, beta);
+                                Console.WriteLine("Graphe amélioré:");
+                                Console.WriteLine(upgradedGraph.ToDot());
+                                Console.WriteLine("Nouveau alpha:");
+                                alpha.Write();
+                                Console.WriteLine("Nouveau beta:");
+                                beta.Write();
+                            }
+                            else
+                            {
+                                ShowManual("b");
+                            }
+                        }
+                        else
+                        {
+                            ShowManual("a");
+                        }
+                    }
+                    else
+                    {
+                        ShowManual("s");
+                    }
                 }
                 else
                 {
-                    int fileTypeIndex = Array.IndexOf(args, "-t");
-                    if (fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)
+                    ShowManual("t");
+                }
+            }
+            else
+            {
+                ShowManual("t");
+            }
+        } 
+    } else
+    {
+        ShowManual("f");
+    }
+} else
+{
+    int modeIndex = Array.IndexOf(args, "-m");
+    if (modeIndex != -1 && modeIndex + 1 < args.Length)
+    {
+        char mode = char.Parse(args[modeIndex + 1]);
+        int nIndex = Array.IndexOf(args, "-n");
+        if (nIndex != -1 && nIndex + 1 < args.Length)
+        {
+            int n = int.Parse(args[nIndex + 1]);
+            int kIndex = Array.IndexOf(args, "-k");
+            if (kIndex != -1 && kIndex + 1 < args.Length)
+            {
+                bool calcDiam = false;
+                int calcIndex = Array.IndexOf(args, "-c");
+                if (calcIndex != -1)
+                {
+                    calcDiam = true;
+                }
+                int k = int.Parse(args[kIndex + 1]);
+                int fileIndex = Array.IndexOf(args, "-f");
+                if (fileIndex != -1 && fileIndex + 1 < args.Length)
+                {
+                    string file = args[fileIndex + 1];
+                    if (!File.Exists(file))
                     {
-                        string types = args[fileTypeIndex + 1].ToLower();
-                        string[] possibleTypes = { "dot", "hog", "gra" };
-                        if (possibleTypes.Contains(types))
+                        ShowManual("f");
+                    }
+                    else
+                    {
+                        int fileTypeIndex = Array.IndexOf(args, "-t");
+                        if (fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)
                         {
-                            Graph graphe = new Graph(n);
-                            switch (types)
+                            string types = args[fileTypeIndex + 1].ToLower();
+                            string[] possibleTypes = { "dot", "hog", "gra" };
+                            if (possibleTypes.Contains(types))
                             {
-                                case "dot":
-                                    graphe = GraphGenerator.GetDotGraph(file);
-                                    break;
-                                case "hog":
-                                    graphe = GraphGenerator.GetHogGraph(file);
-                                    break;
-                                case "gra":
-                                    graphe = GraphGenerator.GetGraGraph(file);
-                                    break;
-                            }
+                                Graph graphe = new Graph(n);
+                                switch (types)
+                                {
+                                    case "dot":
+                                        graphe = GraphGenerator.GetDotGraph(file);
+                                        break;
+                                    case "hog":
+                                        graphe = GraphGenerator.GetHogGraph(file);
+                                        break;
+                                    case "gra":
+                                        graphe = GraphGenerator.GetGraGraph(file);
+                                        break;
+                                }
 
-                            GraphReconfig reconfig = new GraphReconfig(graphe, k, mode);
-                            reconfig.CalcAllIsRec();
-                            if(calcDiam) Console.WriteLine("Diamètre calculé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.GetDiameter());
-                            else Console.WriteLine("Diamètre estimé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.EstimateDiameter());
+                                GraphReconfig reconfig = new GraphReconfig(graphe, k, mode);
+                                reconfig.CalcAllIsRec();
+                                if(calcDiam) Console.WriteLine("Diamètre calculé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.GetDiameter());
+                                else Console.WriteLine("Diamètre estimé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.EstimateDiameter());
+                            }
+                            else
+                            {
+                                ShowManual("t");
+                            }
                         }
                         else
                         {
                             ShowManual("t");
                         }
-                    }
-                    else
+                    } 
+                }
+                else
+                {
+                    // Pas de file
+                    int prevDiam = 0;
+                    int prevDiamIndex = Array.IndexOf(args, "-p");
+                    if(prevDiamIndex != -1 && prevDiamIndex + 1 < args.Length)
                     {
-                        ShowManual("t");
+                    prevDiam = int.Parse(args[prevDiamIndex + 1]);
                     }
-                } 
+                    Benchmark.GetBiggestDiameterGraph(n, k, mode, !calcDiam, prevDiam);
+                }
             }
             else
             {
-                // Pas de file
-                int prevDiam = 0;
-                int prevDiamIndex = Array.IndexOf(args, "-p");
-                if(prevDiamIndex != 1 && prevDiamIndex + 1 < args.Length)
-                {
-                  prevDiam = int.Parse(args[prevDiamIndex + 1]);
-                }
-                Benchmark.GetBiggestDiameterGraph(n, k, mode, !calcDiam, prevDiam);
+                ShowManual("k");
             }
         }
         else
         {
-            ShowManual("k");
+            ShowManual("n");
         }
     }
     else
     {
-        ShowManual("n");
+        ShowManual("m");
     }
 }
-else
-{
-    ShowManual("m");
-}
-

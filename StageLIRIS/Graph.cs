@@ -41,6 +41,19 @@ public class Graph
         }
     }
 
+    public Graph Clone()
+    {
+      Graph newGraph = new Graph(NbVert, Name);
+      for(int i=0; i<NbVert; i++)
+      {
+        for(int v=0; v<Vois[i].Count(); v++)
+        {
+          newGraph.AddEdge(i, Vois[i][v]);
+        }
+      }
+      return newGraph;
+    }
+
     public void WriteVois()
     {
         for (int i = 0; i < NbVert; i++)
@@ -305,5 +318,69 @@ public class Graph
         }
 
         return somme;
+    }
+
+    public Graph UpgradeGraph(IndepSet alpha, IndepSet beta)
+    {
+      // Implémente la construction du 3. du papier Graph track description
+      // A noter que la fonction modifie directement les IS alpha et beta (penser à la cloner avant l'appel si besoin)
+
+      Graph upgradedGraph = Clone();
+      int prevLastVert = NbVert-1;
+
+      for(int i=0; i<10; i++)
+      {
+        upgradedGraph.AddVertex();
+        if(i==1)
+        {
+          for(int u=0; u<NbVert; u++)
+          {
+            if(!alpha.Get(u)) upgradedGraph.AddEdge(u, upgradedGraph.NbVert-1);
+          }
+        } else if(i==5)
+        {
+          for(int v=0; v<NbVert; v++)
+          {
+            if(!beta.Get(v)) upgradedGraph.AddEdge(v, upgradedGraph.NbVert-1);
+          }
+        }
+      }
+
+      int vertZero = prevLastVert+1;
+      upgradedGraph.AddEdge(vertZero, vertZero+3);
+      upgradedGraph.AddEdge(vertZero, vertZero+4);
+      upgradedGraph.AddEdge(vertZero, vertZero+6);
+      upgradedGraph.AddEdge(vertZero, vertZero+7);
+      upgradedGraph.AddEdge(vertZero, vertZero+9);
+      upgradedGraph.AddEdge(vertZero+1, vertZero+4);
+      upgradedGraph.AddEdge(vertZero+1, vertZero+5);
+      upgradedGraph.AddEdge(vertZero+1, vertZero+8);
+      upgradedGraph.AddEdge(vertZero+1, vertZero+9);
+      upgradedGraph.AddEdge(vertZero+2, vertZero+5);
+      upgradedGraph.AddEdge(vertZero+2, vertZero+6);
+      upgradedGraph.AddEdge(vertZero+2, vertZero+7);
+      upgradedGraph.AddEdge(vertZero+2, vertZero+9);
+      upgradedGraph.AddEdge(vertZero+3, vertZero+6);
+      upgradedGraph.AddEdge(vertZero+3, vertZero+7);
+      upgradedGraph.AddEdge(vertZero+3, vertZero+8);
+      upgradedGraph.AddEdge(vertZero+3, vertZero+9);
+      upgradedGraph.AddEdge(vertZero+4, vertZero+8);
+      upgradedGraph.AddEdge(vertZero+4, vertZero+9);
+      upgradedGraph.AddEdge(vertZero+5, vertZero+7);
+      upgradedGraph.AddEdge(vertZero+6, vertZero+8);
+      upgradedGraph.AddEdge(vertZero+6, vertZero+9);
+
+      alpha.MaxSize += 3;
+      alpha.AddVert(prevLastVert+7);
+      alpha.AddVert(prevLastVert+8);
+      alpha.AddVert(prevLastVert+9);
+      
+      beta.MaxSize += 3;
+      beta.AddVert(prevLastVert+7);
+      beta.AddVert(prevLastVert+8);
+      beta.AddVert(prevLastVert+9);
+
+      upgradedGraph.RebuildMat();
+      return upgradedGraph;
     }
 }
