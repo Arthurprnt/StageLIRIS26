@@ -3,22 +3,15 @@ using System.Collections.Specialized;
 
 namespace StageLIRIS;
 
-public class IndepSet
+public class IndepSet : BaseSet
 {
     // Optimisation de l'IndepSet1
     // Les états sont stocké sous forme de bits dans un long
         // -> Plus comptacte
         // -> Inconvénient: pas plus de 64 sommets dans le graphe de base
-    
-    public readonly Graph Graph;
-    public long States = 0L;
-    public int MaxSize;
-    public int CurrSize = 0;
 
-    public IndepSet(Graph graph, int k)
+    public IndepSet(Graph graph, int k): base(graph, k)
     {
-        this.Graph = graph;
-        MaxSize = k;
     }
     
     public override bool Equals(object? obj)
@@ -35,26 +28,7 @@ public class IndepSet
       return States.GetHashCode();
     }
 
-    public void Set(int ind, bool val)
-    {
-        // Setter du tableau States
-        if (val) States += 1L << ind;
-        else States -= 1L << ind;
-    }
-
-    public bool Get(int ind)
-    {
-        // Getter du tableau States
-        return (States & (1L << ind)) != 0;
-    }
-    
-    public static bool Get(long states, int ind)
-    {
-        // Getter du tableau States
-        return (states & (1L << ind)) != 0;
-    }
-
-    public IndepSet Clone()
+    public override IndepSet Clone()
     {
         IndepSet newSet = new IndepSet(Graph, MaxSize);
         newSet.CurrSize = CurrSize;
@@ -62,41 +36,7 @@ public class IndepSet
         return newSet;
     }
     
-    public void Write()
-    {
-        for (int i = 0; i < 64; i++)
-        {
-            if (Get(i))
-            {
-                Console.Write(i + " ");
-            }
-        }
-        Console.WriteLine();
-    }
-    
-    public static string toString(long states)
-    {
-        string result = "";
-        for (int i = 0; i < 64; i++)
-        {
-            if (Get(states, i))
-            {
-                result += i + " ";
-            }
-        }
-        return result;
-    }
-    
-    public void WriteStates()
-    {
-        for (int i = 0; i < Graph.NbVert; i++)
-        {
-            Console.Write(Get(i) + " ");
-        }
-        Console.WriteLine();
-    }
-    
-    public bool CanAddVert(int vert)
+    public override bool CanAddVert(int vert)
     {
         // Renvoie si l'IS serait valide en ajouter le sommet vert
         // Pour chaque voisin du sommet vert, on vérifie s'il est déjà dans l'IS
@@ -108,31 +48,5 @@ public class IndepSet
             }
         }
         return true;
-    }
-    
-    public void AddVert(int vert)
-    {
-        // Ajoute le sommet à l'IS
-        if (!Get(vert) && CurrSize < MaxSize)
-        {
-            Set(vert, true);
-            CurrSize++;
-        }
-    }
-    
-    public void RemoveVert(int vert)
-    {
-        // L'enlève de l'IS
-        if (Get(vert))
-        {
-            Set(vert, false);
-            CurrSize--;
-        }
-    }
-
-    public void ReplaceVert(int oldVert, int newVert)
-    {
-        RemoveVert(oldVert);
-        AddVert(newVert);
     }
 }
