@@ -92,8 +92,9 @@ public class Benchmark
         {
           Directory.CreateDirectory("graphs_found");
         }
-        string outputFile = "graphs_found/n"+n+"k"+k+".txt";
-        File.WriteAllText(outputFile, "Liste des graphes (" + graphs.Count + "):\n");
+        string outputFile = "graphs_found/n"+n+"k"+k+"m"+mode+".txt";
+        File.WriteAllText(outputFile, "Plus gros diamètre trouvé: "+maxDiam+"\n");
+        File.AppendAllText(outputFile, "Liste des graphes (" + graphs.Count + "):\n\n");
         foreach (Graph graph in graphs)
         {
           File.AppendAllText(outputFile, graph.Name+"\n");
@@ -116,10 +117,15 @@ public class Benchmark
         {
           Directory.CreateDirectory("temp");
         }
-        RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" temp/code.txt");
-        RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
-        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode, estimate);
-        RunCommand("rm", "-rf temp");
+
+        long timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+        RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" temp/code"+timestamp+".txt");
+        RunCommand("/bin/listg", " -q temp/code"+timestamp+".txt temp/output"+timestamp+".txt");
+        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, estimate);
+        //RunCommand("rm", "-rf temp");
+        RunCommand("rm", "temp/code"+timestamp+".txt");
+        RunCommand("rm", "temp/output"+timestamp+".txt");
         if (currDiam > biggestDiam)
         {
             biggestDiam = currDiam;
@@ -138,11 +144,16 @@ public class Benchmark
         {
           Directory.CreateDirectory("temp");
         }
-        string commande = "/bin/genrang -P1/2 "+n+" 10000000 | /bin/pickg -c1 -e"+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" > temp/code.g6";
+
+        long timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+        string commande = "/bin/genrang -P1/2 "+n+" 10000000 | /bin/pickg -c1 -e"+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" > temp/code"+timestamp+".g6";
         RunCommand("/bin/bash", $"-c \"{commande}\"");
-        RunCommand("/bin/listg", " -q temp/code.g6 temp/output.txt");
-        int currDiam = CalcBiggestDiameter("temp/output.txt", n, k, mode, estimate);
-        RunCommand("rm", "-rf temp");
+        RunCommand("/bin/listg", " -q temp/code"+timestamp+".g6 temp/output"+timestamp+".txt");
+        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, estimate);
+        //RunCommand("rm", "-rf temp");
+        RunCommand("rm", "temp/code"+timestamp+".g6");
+        RunCommand("rm", "temp/output"+timestamp+".txt");
         if (currDiam > biggestDiam)
         {
             biggestDiam = currDiam;
