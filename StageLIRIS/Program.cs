@@ -14,13 +14,27 @@ Vers windobe:
     dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 */
 
-static int ShowManual(string param)
+static int ShowError(string param)
 {
     Console.WriteLine("\n");
     Console.WriteLine("Error: Missing required argument '-"+param+" <value>'.");
-    Console.WriteLine("Usage: ./StageLIRIS [upgrade -s <is_size> -a <alpha> -b <beta>] [-m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]]");
+    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
+    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -s <is_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
+    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -k <indep_size> -f <file_path> -t <file_type>");
+    Console.WriteLine("Run './StageLIRIS -h' for help.");
+    Console.WriteLine("\n");
+    return 1;
+}
+
+static int ShowManual()
+{
+    Console.WriteLine("\n");
+    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
+    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -s <is_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
+    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -k <indep_size> -f <file_path> -t <file_type>");
     Console.WriteLine("Parameters:");
-    Console.WriteLine("upgrade: Execute the reconfig upgrading instead of finding a diameter. If used, must provide a file with the -f and -t flags.");
+    Console.WriteLine("upgrade: Execute the reconfig upgrading instead of finding a diameter.");
+    Console.WriteLine("reconfig: Reconfig the given graph and provide the dot for reconfigured graph.");
     Console.WriteLine("-s <is_size>: The size of the following independent sets.");
     Console.WriteLine("-a <alpha> | -b <beta>: The independent sets for the upgrade. Should be used like that: '-a 0 1 2' for the independent set {0, 1, 2}.");
     Console.WriteLine("-m <mode>: Can either be J or S. J is for token jumping and S is for token sliding.");
@@ -41,6 +55,9 @@ static int ShowManual(string param)
 Stopwatch stopwatch = new Stopwatch();
 stopwatch.Start();
 
+int helpIndex = Array.IndexOf(args, "-h");
+if(helpIndex != -1) return ShowManual();
+
 int upIndex = Array.IndexOf(args, "updrade");
 if(upIndex == -1) upIndex = Array.IndexOf(args, "u");
 
@@ -50,29 +67,20 @@ if(reconfigIndex == -1) reconfigIndex = Array.IndexOf(args, "r");
 
 if(upIndex != -1 || reconfigIndex != -1)
 {
-    // Using the upgrading mode
+    if(!(upIndex == -1 || reconfigIndex == -1)) return ShowError("upgrade");
+
     int fileIndex = Array.IndexOf(args, "-f");
-    if (!(fileIndex != -1 && fileIndex + 1 < args.Length)) return ShowManual("f");
+    if (!(fileIndex != -1 && fileIndex + 1 < args.Length)) return ShowError("f");
 
     string file = args[fileIndex + 1];
-    if (!File.Exists(file)) return ShowManual("f");
+    if (!File.Exists(file)) return ShowError("f");
 
     int fileTypeIndex = Array.IndexOf(args, "-t");
-    if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)) return ShowManual("t");
+    if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)) return ShowError("t");
 
     string types = args[fileTypeIndex + 1].ToLower();
     string[] possibleTypes = { "dot", "hog", "gra" };
-    if (!possibleTypes.Contains(types)) return ShowManual("t");
-
-    int sizeIndex = Array.IndexOf(args, "-s");
-    if (!(sizeIndex != -1 && sizeIndex + 1 < args.Length)) return ShowManual("s");
-
-    int isSize = int.Parse(args[sizeIndex+1]);
-    int alphaIndex = Array.IndexOf(args, "-a");
-    if (!(alphaIndex != -1 && alphaIndex + isSize < args.Length)) return ShowManual("a");
-
-    int betaIndex = Array.IndexOf(args, "-b");
-    if (!(betaIndex != -1 && betaIndex + isSize < args.Length)) return ShowManual("b");
+    if (!possibleTypes.Contains(types)) return ShowError("t");
 
     Graph graphe = new Graph(1);
     switch (types)
@@ -87,32 +95,62 @@ if(upIndex != -1 || reconfigIndex != -1)
             graphe = GraphGenerator.GetGraGraph(file);
             break;
     }
-    IndepSet alpha = new IndepSet(graphe, isSize);
-    IndepSet beta = new IndepSet(graphe, isSize);
-    for(int i=1; i<=isSize; i++)
-    {
-        alpha.AddVert(int.Parse(args[alphaIndex+i]));
-        beta.AddVert(int.Parse(args[betaIndex+i]));
+
+    if(upIndex != -1) {
+        // Using the upgrading mode
+        int sizeIndex = Array.IndexOf(args, "-s");
+        if (!(sizeIndex != -1 && sizeIndex + 1 < args.Length)) return ShowError("s");
+
+        int isSize = int.Parse(args[sizeIndex+1]);
+        int alphaIndex = Array.IndexOf(args, "-a");
+        if (!(alphaIndex != -1 && alphaIndex + isSize < args.Length)) return ShowError("a");
+
+        int betaIndex = Array.IndexOf(args, "-b");
+        if (!(betaIndex != -1 && betaIndex + isSize < args.Length)) return ShowError("b");
+
+        IndepSet alpha = new IndepSet(graphe, isSize);
+        IndepSet beta = new IndepSet(graphe, isSize);
+        for(int i=1; i<=isSize; i++)
+        {
+            alpha.AddVert(int.Parse(args[alphaIndex+i]));
+            beta.AddVert(int.Parse(args[betaIndex+i]));
+        }
+        Graph upgradedGraph = graphe.UpgradeGraph(alpha, beta);
+        Console.WriteLine("Graphe amélioré:");
+        Console.WriteLine(upgradedGraph.ToDot());
+        Console.WriteLine("Nouveau alpha:");
+        alpha.Write();
+        Console.WriteLine("Nouveau beta:");
+        beta.Write();
     }
-    Graph upgradedGraph = graphe.UpgradeGraph(alpha, beta);
-    Console.WriteLine("Graphe amélioré:");
-    Console.WriteLine(upgradedGraph.ToDot());
-    Console.WriteLine("Nouveau alpha:");
-    alpha.Write();
-    Console.WriteLine("Nouveau beta:");
-    beta.Write();
+    else
+    {
+        // Using the reconfiguration mode
+        int kIndex = Array.IndexOf(args, "-k");
+        if (!(kIndex != -1 && kIndex + 1 < args.Length)) return ShowError("k");
+
+        int k = int.Parse(args[kIndex + 1]);
+        int modeIndex = Array.IndexOf(args, "-m");
+        if (!(modeIndex != -1 && modeIndex + 1 < args.Length)) return ShowError("m");
+
+        char mode = char.Parse(args[modeIndex + 1]);
+        GraphReconfig graphReconfig = new GraphReconfig(graphe, k, mode);
+        graphReconfig.CalcAllIsIte();
+        Console.WriteLine("Graphe reconfiguré du graphe "+file+":");
+        Console.WriteLine(graphReconfig.ToDot());
+    }
 } else
 {
     int modeIndex = Array.IndexOf(args, "-m");
-    if (!(modeIndex != -1 && modeIndex + 1 < args.Length)) return ShowManual("m");
+    if (!(modeIndex != -1 && modeIndex + 1 < args.Length)) return ShowError("m");
 
     char mode = char.Parse(args[modeIndex + 1]);
     int nIndex = Array.IndexOf(args, "-n");
-    if (!(nIndex != -1 && nIndex + 1 < args.Length)) return ShowManual("n");
+    if (!(nIndex != -1 && nIndex + 1 < args.Length)) return ShowError("n");
 
     int n = int.Parse(args[nIndex + 1]);
     int kIndex = Array.IndexOf(args, "-k");
-    if (!(kIndex != -1 && kIndex + 1 < args.Length)) return ShowManual("k");
+    if (!(kIndex != -1 && kIndex + 1 < args.Length)) return ShowError("k");
 
     bool calcDiam = false;
     int calcIndex = Array.IndexOf(args, "-c");
@@ -125,14 +163,14 @@ if(upIndex != -1 || reconfigIndex != -1)
     if (fileIndex != -1 && fileIndex + 1 < args.Length)
     {
         string file = args[fileIndex + 1];
-        if (!File.Exists(file)) return ShowManual("f");
+        if (!File.Exists(file)) return ShowError("f");
 
         int fileTypeIndex = Array.IndexOf(args, "-t");
-        if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)) return ShowManual("t");
+        if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length)) return ShowError("t");
 
         string types = args[fileTypeIndex + 1].ToLower();
         string[] possibleTypes = { "dot", "hog", "gra" };
-        if (!possibleTypes.Contains(types)) return ShowManual("t");
+        if (!possibleTypes.Contains(types)) return ShowError("t");
 
         Graph graphe = new Graph(n);
         switch (types)
