@@ -53,11 +53,11 @@ public class Coloration
         }
         for (int v = 0; v < BaseGraph.NbVert; v++)
         {
-            if (BaseGraph.Mat[i, v] == 1 && BaseGraph.Mat[j, v] == 0 && Colors[i, v] == c)
+            if (BaseGraph.Mat[i][v] == 1 && BaseGraph.Mat[j][v] == 0 && Colors[i, v] == c)
             {
                 PutInNbPath(j, v, NbPath[j, v]-1);
             }
-            if (BaseGraph.Mat[j, v] == 1 && BaseGraph.Mat[i, v] == 0 && Colors[j, v] == c)
+            if (BaseGraph.Mat[j][v] == 1 && BaseGraph.Mat[i][v] == 0 && Colors[j, v] == c)
             {
                 PutInNbPath(i, v, NbPath[i, v]-1);
             }
@@ -97,7 +97,7 @@ public class Coloration
         for (int w = 0; w < BaseGraph.NbVert; w++)
         {
             // On vérifie d'abord s'il existe un chemin de couleur alternée
-            if (w != i && w != j && BaseGraph.Mat[i, w] == 1 && BaseGraph.Mat[w, j] == 1 && Colors[w, j] > 0 && Colors[i, w] > 0 && Colors[i, w] != Colors[w, j])
+            if (w != i && w != j && BaseGraph.Mat[i][w] == 1 && BaseGraph.Mat[w][j] == 1 && Colors[w, j] > 0 && Colors[i, w] > 0 && Colors[i, w] != Colors[w, j])
             {
                 nonEdgeColored = true;
             }
@@ -107,7 +107,7 @@ public class Coloration
         {
             for (int w = 0; w < BaseGraph.NbVert; w++)
             {
-                if (!nonEdgeColored && w!=i && w != j && BaseGraph.Mat[i, w] == 1 && BaseGraph.Mat[w, j] == 1)
+                if (!nonEdgeColored && w!=i && w != j && BaseGraph.Mat[i][w] == 1 && BaseGraph.Mat[w][j] == 1)
                 {
                     // Il existe une chemin entre i et j en passant par w
                     if (Colors[i, w] > 0 && Colors[w, j] == 0)
@@ -128,7 +128,7 @@ public class Coloration
             // On trouve une paire d'arete non coloriées
             for (int w = 0; w < BaseGraph.NbVert; w++)
             {
-                if (!nonEdgeColored && w!= i && w != j && BaseGraph.Mat[i, w] == 1 && BaseGraph.Mat[w, j] == 1 && Colors[i, w] == 0 && Colors[w, j] == 0)
+                if (!nonEdgeColored && w!= i && w != j && BaseGraph.Mat[i][w] == 1 && BaseGraph.Mat[w][j] == 1 && Colors[i, w] == 0 && Colors[w, j] == 0)
                 {
                     nonEdgeColored = true;
                     ColorEdge(i, w, 1);
@@ -159,7 +159,7 @@ public class Coloration
         {
             for (int j = i+1; j < BaseGraph.NbVert; j++)
             {
-                if (BaseGraph.Mat[i, j] == 1)
+                if (BaseGraph.Mat[i][j] == 1)
                 {
                     PutInNbPath(i, j, Int32.MaxValue);
                 }
@@ -167,7 +167,7 @@ public class Coloration
                 {
                     for (int w = 0; w < BaseGraph.NbVert; w++)
                     {
-                        if (BaseGraph.Mat[i, w] == 1 && BaseGraph.Mat[w, j] == 1)
+                        if (BaseGraph.Mat[i][w] == 1 && BaseGraph.Mat[w][j] == 1)
                         {
                             PutInNbPath(i, j, NbPath[i, j]+1);
                         }
@@ -192,7 +192,7 @@ public class Coloration
       {
         for(int j=i+1; j<BaseGraph.NbVert; j++)
         {
-          if(BaseGraph.Mat[i, j] == 0)
+          if(BaseGraph.Mat[i][j] == 0)
           {
             bool foundSmtg = false;
             for(int w=0; w<BaseGraph.NbVert; w++)
@@ -253,7 +253,7 @@ public class Coloration
         }
       } else if(!FoundColoration)
       {
-        if(BaseGraph.Mat[i, j] == 1) 
+        if(BaseGraph.Mat[i][j] == 1) 
         {
           ColorEdge(i, j, 1);
           CallNextColo(i, j);
@@ -285,7 +285,7 @@ public class Coloration
         }
       } else if(!FoundColoration)
       {
-        if(BaseGraph.Mat[i, j] == 1) 
+        if(BaseGraph.Mat[i][j] == 1) 
         {
           if (!Marks[i] && !Marks[j])
           {
@@ -316,7 +316,7 @@ public class Coloration
       {
           for (int j = 0; j < Colors.GetLength(1); j++)
           {
-              if(BaseGraph.Mat[i, j] == 1) Colors[i, j] = 1;
+              if(BaseGraph.Mat[i][j] == 1) Colors[i, j] = 1;
           }
       }
       BrutForceColorationCouplageAux(0, 0);

@@ -7,7 +7,7 @@ public class Graph
     // La matrice est valide tant que AddVert() n'est pas appelé
     // Il faut utilise RebuildMat() pour la reconstruire
     public string Name;
-    public int[,] Mat;
+    public List<List<int>> Mat;
     public List<List<int>> Vois;
     public int NbVert;
     public int NbEdges;
@@ -17,11 +17,16 @@ public class Graph
 
     public Graph(int nbVertices, string name)
     {
-        Mat = new int[nbVertices, nbVertices];
+        Mat = new List<List<int>>(nbVertices);
         Vois = new List<List<int>>(nbVertices);
         for (int i = 0; i < nbVertices; i++)
         {
             Vois.Add(new List<int>());
+            Mat.Add(new List<int>(nbVertices));
+            for(int j=0; j < nbVertices; j++)
+            {
+              Mat[i].Add(0);
+            }
         }
         NbVert = nbVertices;
         Name = name;
@@ -35,7 +40,7 @@ public class Graph
         {
             for (int j = 0; j < NbVert; j++)
             {
-                Console.Write(Mat[i, j] + " ");
+                Console.Write(Mat[i][j] + " ");
             }
             Console.WriteLine();
         }
@@ -92,13 +97,40 @@ public class Graph
         Vois.Add(new List<int>(NbVert));
         NbVert++;
     }
+
+    public void RemoveVertex(int vert)
+    {
+      // On commence par supprimer toutes les arêtes pouvant contenir vert
+      for(int i=0; i<NbVert; i++) {
+        RemoveEdge(vert, i);
+      }
+
+      // On supprime ensuite la ligne et colonne de la matrice
+      Mat.RemoveAt(vert);
+      for(int i=0; i<NbVert-1; i++)
+      {
+        Mat[i].RemoveAt(vert);
+      }
+
+      // Enfin on renomme les voisins dans les list de voisins
+      Vois.RemoveAt(vert);
+      for(int v=0; v<NbVert-1; v++)
+      {
+        for(int voisInd=0; voisInd<Vois[v].Count(); voisInd++)
+        {
+          if(Vois[v][voisInd] > vert) Vois[v][voisInd]--;
+        }
+      }
+
+      NbVert--;
+    }
     
     public void AddEdge(int from, int to)
     {
         if (IsMatSync)
         {
-            Mat[from, to] = 1;
-            Mat[to, from] = 1;
+            Mat[from][to] = 1;
+            Mat[to][from] = 1;
         }
 
         // On incrémente le compteur d'arête seulement si elle n'est pas déjà présente
@@ -117,15 +149,32 @@ public class Graph
         if(isNewEdge == 2) NbEdges++;
     }
 
+    public void RemoveEdge(int from, int to)
+    {
+      if(IsMatSync)
+      {
+        Mat[from][to] = 0;
+        Mat[to][from] = 0;
+      }
+     
+      // Supprime les potentiels voisins tout en faisant la vérification
+      if(Vois[from].Remove(to) && Vois[to].Remove(from)) NbEdges--;
+    }
+
     public void RebuildMat()
     {
         // Resynchronise la matrice d'adjacence
-        Mat = new int[NbVert, NbVert];
+        Mat = new List<List<int>>(NbVert);
         for (int i = 0; i < NbVert; i++)
         {
+            Mat.Add(new List<int>(NbVert));
+            for(int j=0; j<NbVert; j++)
+            {
+              Mat[i].Add(0);
+            }
             for (int v = 0; v < Vois[i].Count; v++)
             {
-                Mat[i, v] = 1;
+                Mat[i][v] = 1;
             }
         }
         IsMatSync = true;
@@ -312,7 +361,7 @@ public class Graph
             {
                 for (int k = j + 1; k < NbVert; k++)
                 {
-                    if(Mat[i, j] == 1 && Mat[j, k] == 1 && Mat[k, i] == 1) somme++;
+                    if(Mat[i][j] == 1 && Mat[j][k] == 1 && Mat[k][i] == 1) somme++;
                 }
             }
         }

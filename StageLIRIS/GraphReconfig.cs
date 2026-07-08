@@ -15,7 +15,7 @@ public class GraphReconfig
     public readonly Graph Graph;
     public readonly int K;
     public readonly char Mode;
-    public List<IndepSet> AllIs = new List<IndepSet>();
+    public List<BaseSet> AllIs = new List<BaseSet>();
     public Dictionary<long, int> IsToIndex = new Dictionary<long, int>();
     public Dictionary<int, long> IndexToIs = new Dictionary<int, long>();
     public Graph Reconfig = new Graph(0);
@@ -54,14 +54,14 @@ public class GraphReconfig
         }
     }
 
-    public bool isIndepInDict(IndepSet indepSet)
+    public bool isIndepInDict(BaseSet indepSet)
     {
         // Détection rapide de la présence de l'IS dans AllIs
         // Car si un IS a été visité, il est dans le graphe et il possède ainsi un indice dans le dico
         return IsToIndex.ContainsKey(indepSet.States);
     }
     
-    public int AddVertex(IndepSet indepSet)
+    public int AddVertex(BaseSet indepSet)
     {
         // Ajoute l'indépendant dans le graph reconfig
         if(indepSet.CurrSize != indepSet.MaxSize) throw new Exception("L'IS n'est pas de taille k");
@@ -115,7 +115,7 @@ public class GraphReconfig
         return IsToIndex[currIs.States];
     }
 
-    public void handleNeigh(IndepSet currIs, int currVert, int vertNeigh, Queue<IndepSet> queue)
+    public void handleNeigh(BaseSet currIs, int currVert, int vertNeigh, Queue<BaseSet> queue)
     {
         // Fonction qui fait le traitement de passer d'un IS à l'autre
         // Utile car différente façon de déplacer le token
@@ -135,7 +135,7 @@ public class GraphReconfig
             }
             else
             {
-                IndepSet nextIsClone = currIs.Clone(); 
+                BaseSet nextIsClone = currIs.Clone(); 
                                 
                 nextSetId = AddVertex(nextIsClone);
                 queue.Enqueue(nextIsClone);
@@ -151,10 +151,10 @@ public class GraphReconfig
         }
     }
     
-    public List<IndepSet> CalcAllIsRec()
+    public List<BaseSet> CalcAllIsRec()
     {
         // Construit également le graphe de reconfig
-        AllIs = new List<IndepSet>();
+        AllIs = new List<BaseSet>();
         Reconfig = new Graph(0);
 
         for (int i = 0; i < Graph.NbVert; i++)
@@ -169,17 +169,17 @@ public class GraphReconfig
         return AllIs;
     }
     
-    public List<IndepSet> CalcAllIsIte()
+    public List<BaseSet> CalcAllIsIte()
     {
         // Version itérative du calcul de tous les IS
-        AllIs = new List<IndepSet>();
+        AllIs = new List<BaseSet>();
         Reconfig = new Graph(0);
         
-        Queue<IndepSet> queue = new Queue<IndepSet>();
+        Queue<BaseSet> queue = new Queue<BaseSet>();
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
+            BaseSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
             if (calcedIs != null)
             {
                 if (calcedIs.CurrSize != calcedIs.MaxSize) 
@@ -200,7 +200,7 @@ public class GraphReconfig
 
         while (queue.Count > 0)
         {
-            IndepSet currIs = queue.Dequeue();
+            BaseSet currIs = queue.Dequeue();
 
             for (int i = 0; i < Graph.NbVert; i++)
             {

@@ -187,7 +187,7 @@ if(upIndex != -1 || reconfigIndex != -1)
         }
 
         GraphReconfig reconfig = new GraphReconfig(graphe, k, mode);
-        reconfig.CalcAllIsRec();
+        reconfig.CalcAllIsIte();
         if(calcDiam) Console.WriteLine("Diamètre calculé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.GetDiameter());
         else Console.WriteLine("Diamètre estimé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.EstimateDiameter());
     }
