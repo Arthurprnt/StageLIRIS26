@@ -9,6 +9,26 @@ public class IndepSet : BaseSet
     // Les états sont stocké sous forme de bits dans un long
         // -> Plus comptacte
         // -> Inconvénient: pas plus de 64 sommets dans le graphe de base
+    
+    public static int nbOfIs(Graph graph, int k)
+    {
+      if(k==0) return 1;
+      if(graph.NbVert < k) return 0;
+
+      // On supprime que vert
+      Graph gSv = graph.Clone();
+      gSv.RemoveVertex(0);
+      int nbSansV = nbOfIs(gSv, k);
+      // On supprime aussi le voisinnage
+      Graph gAv = graph.Clone();
+      for(int i=graph.Vois[0].Count()-1; i>=0; i--)
+      {
+        gAv.RemoveVertex(graph.Vois[0][i]);
+      }
+      gAv.RemoveVertex(0);
+      int nbAvecV = nbOfIs(gAv, k-1);
+      return nbSansV+nbAvecV;
+    }
 
     public IndepSet(Graph graph, int k): base(graph, k)
     {

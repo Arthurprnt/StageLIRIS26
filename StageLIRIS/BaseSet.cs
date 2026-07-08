@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace StageLIRIS;
 
 public abstract class BaseSet
@@ -106,4 +108,13 @@ public abstract class BaseSet
     }
 
     public abstract bool IsValid();
+
+    public static int DiffBtw(long s1, long s2)
+    {
+      // Optimisé à la mort par IA (j'avoue mon crime)
+      ulong masque = (ulong)(s1 & ~s2);
+      if (masque == 0) throw new Exception("Il n'y a aucune différence entre les deux long fournis."); 
+      // Compter les zéros de droite (Trailing Zeros) pour trouver l'indice du premier bit à 1
+      return BitOperations.TrailingZeroCount(masque);
+    }
 }

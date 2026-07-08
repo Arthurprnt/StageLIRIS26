@@ -171,70 +171,88 @@ public class GraphReconfig
     
     public List<BaseSet> CalcAllIsIte()
     {
-        // Version itérative du calcul de tous les IS
-        AllIs = new List<BaseSet>();
-        Reconfig = new Graph(0);
-        
-        Queue<BaseSet> queue = new Queue<BaseSet>();
+      // Calcul tous les sets par brutforce
+      // Fonction optimisée à l'IA (passage à l'itératif notamment)
 
-        for (int i = 0; i < Graph.NbVert; i++)
+      AllIs = new List<BaseSet>();
+      Reconfig = new Graph(0);
+
+      int[] chosen = new int[K];
+      int level = 0;
+
+      // Commence avec le sommet 0 au niveau 0
+      chosen[0] = 0;
+
+      BaseSet currSet = new IndepSet(Graph, K);
+
+      while(level >= 0)
+      {
+        // Si on n'a pas encore dépassé le nombre total de sommets pour ce niveau
+        if(chosen[level] < Graph.NbVert)
         {
-            BaseSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
-            if (calcedIs != null)
+          int vert = chosen[level];
+          // Elegage car pas assez de sommets restant
+          if(level + (Graph.NbVert - vert) < K)
+          {
+            chosen[level] = Graph.NbVert;
+            continue;
+          }
+
+          if(currSet.CanAddVert(vert))
+          {
+            currSet.AddVert(vert);
+
+            if(level == K-1)
             {
-                if (calcedIs.CurrSize != calcedIs.MaxSize) 
-                    throw new Exception("L'IS n'est pas de taille k");
-
-                if (!isIndepInDict(calcedIs))
+              // On ajoue le nouvel ensemble (indep ou dominant)
+              int setId = AddVertex(currSet);
+              for(int prevId=0; prevId<setId; prevId++)
+              {
+                long prevStates = IndexToIs[prevId];
+                int intersectionSize = System.Numerics.BitOperations.PopCount((ulong)(currSet.States & prevStates));
+                if(intersectionSize == K-1)
                 {
-                    AddVertex(calcedIs);
-                    queue.Enqueue(calcedIs);
+                  if(Mode == 'J')
+                  {
+                    Reconfig.AddEdge(setId, prevId);
+                  }
+                  else if(Mode == 'S')
+                  {
+                    int uniqueInCurr = BaseSet.DiffBtw(currSet.States, prevStates);
+                    int uniqueInPrev = BaseSet.DiffBtw(prevStates, currSet.States);
+                    if(Graph.Vois[uniqueInCurr].Contains(uniqueInPrev)) Reconfig.AddEdge(setId, prevId);
+                  }
                 }
+              }
+              //==========
+              
+              currSet.RemoveVert(vert);
+              chosen[level]++;
             }
-        }
-
-        if(queue.Count == 0)
-        {
-          isValid = false;
-        }
-
-        while (queue.Count > 0)
-        {
-            BaseSet currIs = queue.Dequeue();
-
-            for (int i = 0; i < Graph.NbVert; i++)
+            else
             {
-                if (currIs.Get(i))
-                {
-                    int currVert = i;
-                    // Pour chaque sommet du IS on check ses potentiels voisins
-                    // Mode sliding
-                    if (Mode == 'S')
-                    {
-                        for (int v = 0; v < Graph.Vois[currVert].Count; v++)
-                        {
-                            handleNeigh(currIs, currVert, Graph.Vois[currVert][v], queue);
-                        }
-                    }
-                    // Mode jumping
-                    else if(Mode == 'J')
-                    {
-                        for (int vertNeigh = 0; vertNeigh < Graph.NbVert; vertNeigh++)
-                        {
-                            if (vertNeigh != i && !currIs.Get(vertNeigh))
-                            {
-                                handleNeigh(currIs, currVert, vertNeigh, queue);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception("Ce mode de déplacement de token n'existe pas (utiliser S ou J).");
-                    }
-                    
-                }
+              level++;
+              chosen[level] = vert+1;
             }
+          }
+          else
+          {
+            // Pas valide, on passe au sommet suivant pour ce niveau
+            chosen[level]++;
+          }
         }
-        return AllIs;
+        else
+        {
+          // Backtracking: on a épuisé toutes les possibilités pour ce niveau, on remonte d'un cran
+          level--;
+          if(level >= 0)
+          {
+            // On retire le sommet du niveau supérieur de notre set actuel avant de l'incrémenter
+            currSet.RemoveVert(chosen[level]);
+            chosen[level]++;
+          }
+        }
+      }
+      return AllIs;
     }
 }
