@@ -75,31 +75,6 @@ public class GraphReconfig
         return indepSetId;
     }
     
-    public IndepSet? CalcIs(int from)
-    {
-        // On calcul un IS de taille K contenant le sommet from
-        // Sert à avoir un point de départ pour trouver les voisins ensuite
-        int ind = 0;
-        // On ajoute manuellement le sommet from
-        IndepSet indepSet = new IndepSet(Graph, K);
-        indepSet.AddVert(from);
-        while (indepSet.CurrSize < indepSet.MaxSize &&  ind < Graph.NbVert)
-        {
-            // Maintenant on ajoute tous les sommets qui maintiennent l'indépendance de l'ensemble
-            if (ind != from && indepSet.CanAddVert(ind))
-            {
-                indepSet.AddVert(ind);
-            }
-            ind++;
-        }
-
-        if (indepSet.CurrSize != indepSet.MaxSize)
-        {
-            return null;
-        }
-        return indepSet;
-    }
-    
     public int CalcAllIsRecAux(IndepSet currIs)
     {
         // Fonction auxiliaire qui calcule de proche en proche tous les IS de taille K
@@ -178,12 +153,13 @@ public class GraphReconfig
     
     public List<IndepSet> CalcAllIsRec()
     {
+        // Construit également le graphe de reconfig
         AllIs = new List<IndepSet>();
         Reconfig = new Graph(0);
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet? calcedIs = CalcIs(i);
+            IndepSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
             if(calcedIs != null)
             {
               CalcAllIsRecAux(calcedIs);
@@ -203,7 +179,7 @@ public class GraphReconfig
 
         for (int i = 0; i < Graph.NbVert; i++)
         {
-            IndepSet? calcedIs = CalcIs(i);
+            IndepSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
             if (calcedIs != null)
             {
                 if (calcedIs.CurrSize != calcedIs.MaxSize) 

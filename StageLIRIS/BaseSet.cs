@@ -100,4 +100,10 @@ public abstract class BaseSet
         RemoveVert(oldVert);
         AddVert(newVert);
     }
+
+    public static BaseSet? CreateSet(Graph graph, int k, int from) {
+        return null;
+    }
+
+    public abstract bool IsValid();
 }

@@ -49,4 +49,32 @@ public class IndepSet : BaseSet
         }
         return true;
     }
+
+    public new static IndepSet? CreateSet(Graph graph, int k, int from) {
+        // On calcul un IS de taille K contenant le sommet from
+        // Sert à avoir un point de départ pour trouver les voisins ensuite
+        int ind = 0;
+        // On ajoute manuellement le sommet from
+        IndepSet indepSet = new IndepSet(graph, k);
+        indepSet.AddVert(from);
+        while (indepSet.CurrSize < indepSet.MaxSize &&  ind < graph.NbVert)
+        {
+            // Maintenant on ajoute tous les sommets qui maintiennent l'indépendance de l'ensemble
+            if (ind != from && indepSet.CanAddVert(ind))
+            {
+                indepSet.AddVert(ind);
+            }
+            ind++;
+        }
+
+        if (!indepSet.IsValid())
+        {
+            return null;
+        }
+        return indepSet;
+    }
+
+    public override bool IsValid() {
+        return CurrSize == MaxSize;
+    }
 }
