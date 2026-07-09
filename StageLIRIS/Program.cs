@@ -18,9 +18,9 @@ static int ShowError(string param)
 {
     Console.WriteLine("\n");
     Console.WriteLine("Error: Missing required argument '-"+param+" <value>'.");
-    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
-    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -s <is_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
-    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -k <indep_size> -f <file_path> -t <file_type>");
+    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -s <set_type> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
+    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
+    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <indep_size> -f <file_path> -t <file_type>");
     Console.WriteLine("Run './StageLIRIS -h' for help.");
     Console.WriteLine("\n");
     return 1;
@@ -29,15 +29,15 @@ static int ShowError(string param)
 static int ShowManual()
 {
     Console.WriteLine("\n");
-    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
-    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -s <is_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
-    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -k <indep_size> -f <file_path> -t <file_type>");
+    Console.WriteLine("Default usage: ./StageLIRIS -m <mode> -s <set_type> -n <nb_vert> -k <indep_size> [-f <file_path>] [-t <file_type>] [-c] [-p <prev_diam>]");
+    Console.WriteLine("Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>");
+    Console.WriteLine("Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <indep_size> -f <file_path> -t <file_type>");
     Console.WriteLine("Parameters:");
-    Console.WriteLine("upgrade: Execute the reconfig upgrading instead of finding a diameter.");
+    Console.WriteLine("upgrade: Execute the reconfig upgrading instead of finding a diameter. Only for independent sets.");
     Console.WriteLine("reconfig: Reconfig the given graph and provide the dot for reconfigured graph.");
-    Console.WriteLine("-s <is_size>: The size of the following independent sets.");
     Console.WriteLine("-a <alpha> | -b <beta>: The independent sets for the upgrade. Should be used like that: '-a 0 1 2' for the independent set {0, 1, 2}.");
     Console.WriteLine("-m <mode>: Can either be J or S. J is for token jumping and S is for token sliding.");
+    Console.WriteLine("-s <set_type>: Can either be I or D. I is for independent sets and D is for dominant sets.");
     Console.WriteLine("-n <nb_vert>: The number of vertices in the graph(s).");
     Console.WriteLine("-k <indep_size>: The size of the independent sets used for the reconfig graph(s).");
     Console.WriteLine("-f <file_path>: If used will run the program only for one graph (the one in the file). If not used, will run the program for all graphs of size n.");
@@ -133,11 +133,15 @@ if(upIndex != -1 || reconfigIndex != -1)
         int modeIndex = Array.IndexOf(args, "-m");
         if (!(modeIndex != -1 && modeIndex + 1 < args.Length)) return ShowError("m");
 
+        int setTypeIndex = Array.IndexOf(args, "-s");
+        if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length)) return ShowError("s");
+        char setType = char.Parse(args[setTypeIndex + 1]);
+
         char mode = char.Parse(args[modeIndex + 1]);
         GraphReconfig graphReconfig = new GraphReconfig(graphe, k, mode);
-        graphReconfig.CalcAllIsIte();
+        graphReconfig.CalcAllSetsIte(setType);
         Console.WriteLine("Graphe reconfiguré du graphe "+file+":");
-        Console.WriteLine(graphReconfig.ToDot());
+        Console.WriteLine(graphReconfig.Reconfig.ToDot());
     }
 } else
 {
@@ -151,6 +155,11 @@ if(upIndex != -1 || reconfigIndex != -1)
     int n = int.Parse(args[nIndex + 1]);
     int kIndex = Array.IndexOf(args, "-k");
     if (!(kIndex != -1 && kIndex + 1 < args.Length)) return ShowError("k");
+
+    int setTypeIndex = Array.IndexOf(args, "-s");
+    if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length)) return ShowError("s");
+    char setType = char.Parse(args[setTypeIndex + 1]);
+
 
     bool calcDiam = false;
     int calcIndex = Array.IndexOf(args, "-c");
@@ -187,7 +196,7 @@ if(upIndex != -1 || reconfigIndex != -1)
         }
 
         GraphReconfig reconfig = new GraphReconfig(graphe, k, mode);
-        reconfig.CalcAllIsIte();
+        reconfig.CalcAllSetsIte(setType);
         if(calcDiam) Console.WriteLine("Diamètre calculé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.GetDiameter());
         else Console.WriteLine("Diamètre estimé du graphe de reconfig pour "+file+$": "+reconfig.Reconfig.EstimateDiameter());
     }
@@ -200,7 +209,7 @@ if(upIndex != -1 || reconfigIndex != -1)
         {
         prevDiam = int.Parse(args[prevDiamIndex + 1]);
         }
-        Benchmark.GetBiggestDiameterGraph(n, k, mode, !calcDiam, prevDiam);
+        Benchmark.GetBiggestDiameterGraph(n, k, mode, setType, !calcDiam, prevDiam);
     }
 }
 

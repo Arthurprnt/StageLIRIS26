@@ -29,11 +29,11 @@ public class Benchmark
         return Math.Truncate(nb * 100) / 100;
     }
 
-    public static int GetDiamOfIsGraph(Graph graph, int k, char mode, bool estimate)
+    public static int GetDiamOfIsGraph(Graph graph, int k, char mode, char setType, bool estimate)
     {
         // Mode: Token sliding -> S | Token jumping -> J
         GraphReconfig graphReconfig = new GraphReconfig(graph, k, mode);
-        graphReconfig.CalcAllIsIte();
+        graphReconfig.CalcAllSetsIte(setType);
         Graph graphIs = graphReconfig.Reconfig;
         int diameter;
         if(estimate) diameter = graphIs.EstimateDiameter();
@@ -44,7 +44,7 @@ public class Benchmark
         return -1;
     }
 
-    public static int CalcBiggestDiameter(string file, int n, int k, char mode, bool estimate)
+    public static int CalcBiggestDiameter(string file, int n, int k, char mode, char setType, bool estimate)
     {
         // Renvoie le diamètre max du graphe IS trouvé
         // Ecrit les graphes trouvés dans le fichier graphs_found/n<n>k<k>.txt
@@ -71,7 +71,7 @@ public class Benchmark
             vertsDone++;
             if(vertsDone == nbVert) {
               Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-              int diameter = GetDiamOfIsGraph(graphe, k, mode, estimate);
+              int diameter = GetDiamOfIsGraph(graphe, k, mode, setType, estimate);
               if (diameter > maxDiam)
               {
                 graphs = new List<Graph>();
@@ -88,11 +88,13 @@ public class Benchmark
         }
 
         Console.WriteLine("Plus gros diamètre trouvé pour les graphes de reconfig avec n="+n+" et k="+k+": " + maxDiam);
-        if(!Directory.Exists("graphs_found"))
-        {
-          Directory.CreateDirectory("graphs_found");
-        }
-        string outputFile = "graphs_found/n"+n+"k"+k+"m"+mode+".txt";
+        if(!Directory.Exists("graphs_found")) Directory.CreateDirectory("graphs_found");
+        if(!Directory.Exists("graphs_found/indep_sets")) Directory.CreateDirectory("graphs_found/indep_sets");
+        if(!Directory.Exists("graphs_found/dominant_sets")) Directory.CreateDirectory("graphs_found/dominant_sets");
+
+        string outputFile = "graphs_found/n"+n+"k"+k+"m"+mode+"s"+setType+".txt";
+        if(setType == 'I') outputFile = "graphs_found/indep_sets/n"+n+"k"+k+"m"+mode+".txt";
+        else if(setType == 'D') outputFile = "graphs_found/dominant_sets/n"+n+"k"+k+"m"+mode+".txt";
         File.WriteAllText(outputFile, "Plus gros diamètre trouvé: "+maxDiam+"\n");
         File.AppendAllText(outputFile, "Liste des graphes (" + graphs.Count + "):\n\n");
         foreach (Graph graph in graphs)
@@ -108,7 +110,7 @@ public class Benchmark
         return maxDiam;
     }
 
-    public static int GetBiggestDiameterGraph(int n, int k, char mode, bool estimate, int prevBiggestDiam=0)
+    public static int GetBiggestDiameterGraph(int n, int k, char mode, char setType, bool estimate, int prevBiggestDiam=0)
     {
         // Automatise la fonction CalcBiggestDiameterFromFolder
         // prevBiggestDiam correspond au plus gros diamètre trouvé pour (n-1) avec le même k
@@ -122,7 +124,7 @@ public class Benchmark
 
         RunCommand("/bin/geng", "-c "+n+" "+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" temp/code"+timestamp+".txt");
         RunCommand("/bin/listg", " -q temp/code"+timestamp+".txt temp/output"+timestamp+".txt");
-        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, estimate);
+        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, setType, estimate);
         //RunCommand("rm", "-rf temp");
         RunCommand("rm", "temp/code"+timestamp+".txt");
         RunCommand("rm", "temp/output"+timestamp+".txt");
@@ -133,7 +135,7 @@ public class Benchmark
         return biggestDiam;
     }
 
-    public static int EstimateBiggestDiameterGraph(int n, int k, char mode, bool estimate, int prevBiggestDiam=0)
+    public static int EstimateBiggestDiameterGraph(int n, int k, char mode, char setType, bool estimate, int prevBiggestDiam=0)
     {
         // Automatise la fonction CalcBiggestDiameterFromFolder sans calculer tous les graphes
         // Génère un échantillon pour ensuite le tester comme le fait GetBiggestDiameterGraph
@@ -150,7 +152,7 @@ public class Benchmark
         string commande = "/bin/genrang -P1/2 "+n+" 10000000 | /bin/pickg -c1 -e"+(n-1)+":"+(n*(n-1)/2-k*(k-1)/2-(k-1)*prevBiggestDiam)+" > temp/code"+timestamp+".g6";
         RunCommand("/bin/bash", $"-c \"{commande}\"");
         RunCommand("/bin/listg", " -q temp/code"+timestamp+".g6 temp/output"+timestamp+".txt");
-        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, estimate);
+        int currDiam = CalcBiggestDiameter("temp/output"+timestamp+".txt", n, k, mode, setType, estimate);
         //RunCommand("rm", "-rf temp");
         RunCommand("rm", "temp/code"+timestamp+".g6");
         RunCommand("rm", "temp/output"+timestamp+".txt");

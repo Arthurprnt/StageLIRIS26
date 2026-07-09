@@ -15,9 +15,9 @@ public class GraphReconfig
     public readonly Graph Graph;
     public readonly int K;
     public readonly char Mode;
-    public List<BaseSet> AllIs = new List<BaseSet>();
-    public Dictionary<long, int> IsToIndex = new Dictionary<long, int>();
-    public Dictionary<int, long> IndexToIs = new Dictionary<int, long>();
+    public List<BaseSet> AllSets = new List<BaseSet>();
+    public Dictionary<long, int> SetToIndex = new Dictionary<long, int>();
+    public Dictionary<int, long> IndexToSet = new Dictionary<int, long>();
     public Graph Reconfig = new Graph(0);
     public bool isValid = true;
 
@@ -34,11 +34,16 @@ public class GraphReconfig
         StringBuilder dot = new StringBuilder();
         dot.AppendLine("graph G {");
 
+        for(int i=0; i<Reconfig.NbVert; i++) {
+          if(Reconfig.Vois[i].Count() == 0) dot.AppendLine($"  \"{BaseSet.toString(IndexToSet[i])}\";");
+        }
+
+
         for (int i = 0; i < Reconfig.Vois.Count; i++)
         {
             for (int j = 0; j < Reconfig.Vois[i].Count; j++)
             {
-                if(Reconfig.Vois[i][j] > i) dot.AppendLine($"  \"{IndepSet.toString(IndexToIs[i])}\" -- \"{IndepSet.toString(IndexToIs[Reconfig.Vois[i][j]])}\";");
+                if(Reconfig.Vois[i][j] > i) dot.AppendLine($"  \"{BaseSet.toString(IndexToSet[i])}\" -- \"{BaseSet.toString(IndexToSet[Reconfig.Vois[i][j]])}\";");
             }
         }
 
@@ -48,133 +53,39 @@ public class GraphReconfig
 
     public void WriteDict()
     {
-        foreach (var key in IsToIndex.Keys)
+        foreach (var key in SetToIndex.Keys)
         {
-            Console.WriteLine(IndepSet.toString(key) + ": " + IsToIndex[key]);
+            Console.WriteLine(BaseSet.toString(key) + ": " + SetToIndex[key]);
         }
     }
 
-    public bool isIndepInDict(BaseSet indepSet)
+    public bool isIndepInDict(BaseSet currSet)
     {
         // Détection rapide de la présence de l'IS dans AllIs
         // Car si un IS a été visité, il est dans le graphe et il possède ainsi un indice dans le dico
-        return IsToIndex.ContainsKey(indepSet.States);
+        return SetToIndex.ContainsKey(currSet.States);
     }
     
-    public int AddVertex(BaseSet indepSet)
+    public int AddVertex(BaseSet currSet)
     {
         // Ajoute l'indépendant dans le graph reconfig
-        if(indepSet.CurrSize != indepSet.MaxSize) throw new Exception("L'IS n'est pas de taille k");
+        if(currSet.CurrSize != currSet.MaxSize) throw new Exception("L'IS n'est pas de taille k");
         int indepSetId = Reconfig.NbVert;
         // On sauvegarde sont indice de sommet associé
-        IsToIndex.Add(indepSet.States, indepSetId);
-        IndexToIs.Add(indepSetId, indepSet.States);
-        AllIs.Add(indepSet.Clone());
+        SetToIndex.Add(currSet.States, indepSetId);
+        IndexToSet.Add(indepSetId, currSet.States);
+        AllSets.Add(currSet.Clone());
         Reconfig.AddVertex();
         Graph.NbIs++;
         return indepSetId;
     }
     
-    public int CalcAllIsRecAux(IndepSet currIs)
-    {
-        // Fonction auxiliaire qui calcule de proche en proche tous les IS de taille K
-        // Prends en charge seulement le token sliding, cf la version itérative pour le token jumping
-        if (currIs.CurrSize != currIs.MaxSize) throw new Exception("L'IS n'est pas de taille k");
-        if (!isIndepInDict(currIs))
-        {
-            int currSetId = AddVertex(currIs);
-            for (int i = 0; i < Graph.NbVert; i++)
-            {
-                if (currIs.Get(i))
-                {
-                    int currVert = i;
-                    // On regarde où peut slide le token courant
-                    for (int v = 0; v < Graph.Vois[currVert].Count; v++)
-                    {
-                        int savedNeigh = Graph.Vois[currVert][v];
-                        currIs.RemoveVert(currVert);
-                        if (currIs.CanAddVert(savedNeigh))
-                        {
-                            currIs.AddVert(savedNeigh);
-                            int nextSetId = CalcAllIsRecAux(currIs);
-                            // Comme le nouveau IS à un seul de diff, c'est un voisin
-                            // On ajoute l'arête entre les deux sommets
-                            Reconfig.AddEdge(currSetId, nextSetId);
-                            currIs.ReplaceVert(savedNeigh, currVert);
-                        }
-                        else
-                        {
-                            // S'il n'est pas valide on restore son état d'origine
-                            currIs.AddVert(currVert);
-                        }
-                    }
-                }
-            }
-            return currSetId;
-        }
-        return IsToIndex[currIs.States];
-    }
-
-    public void handleNeigh(BaseSet currIs, int currVert, int vertNeigh, Queue<BaseSet> queue)
-    {
-        // Fonction qui fait le traitement de passer d'un IS à l'autre
-        // Utile car différente façon de déplacer le token
-        // Evite la redondance de code
-        int currSetId = IsToIndex[currIs.States];
-        
-        currIs.RemoveVert(currVert);
-        if (currIs.CanAddVert(vertNeigh))
-        {
-            currIs.AddVert(vertNeigh);
-
-            int nextSetId;
-            // Evite de mettre deux fois le même IS dans la file
-            if (isIndepInDict(currIs))
-            {
-                nextSetId = IsToIndex[currIs.States];
-            }
-            else
-            {
-                BaseSet nextIsClone = currIs.Clone(); 
-                                
-                nextSetId = AddVertex(nextIsClone);
-                queue.Enqueue(nextIsClone);
-            }
-            // Comme le nouveau IS à un seul de diff, c'est un voisin
-            Reconfig.AddEdge(currSetId, nextSetId);
-
-            currIs.ReplaceVert(vertNeigh, currVert);
-        }
-        else
-        {
-            currIs.AddVert(currVert);
-        }
-    }
-    
-    public List<BaseSet> CalcAllIsRec()
-    {
-        // Construit également le graphe de reconfig
-        AllIs = new List<BaseSet>();
-        Reconfig = new Graph(0);
-
-        for (int i = 0; i < Graph.NbVert; i++)
-        {
-            IndepSet? calcedIs = IndepSet.CreateSet(Graph, K, i);
-            if(calcedIs != null)
-            {
-              CalcAllIsRecAux(calcedIs);
-            }
-        }
-        
-        return AllIs;
-    }
-    
-    public List<BaseSet> CalcAllIsIte()
+    public List<BaseSet> CalcAllSetsIte(char setType)
     {
       // Calcul tous les sets par brutforce
       // Fonction optimisée à l'IA (passage à l'itératif notamment)
 
-      AllIs = new List<BaseSet>();
+      AllSets = new List<BaseSet>();
       Reconfig = new Graph(0);
 
       int[] chosen = new int[K];
@@ -183,7 +94,10 @@ public class GraphReconfig
       // Commence avec le sommet 0 au niveau 0
       chosen[0] = 0;
 
-      BaseSet currSet = new IndepSet(Graph, K);
+      BaseSet currSet;
+      if(setType == 'I') currSet = new IndepSet(Graph, K);
+      else if (setType == 'D') currSet = new DominantSet(Graph, K);
+      else throw new Exception("This type of set does not exist.");
 
       while(level >= 0)
       {
@@ -204,23 +118,26 @@ public class GraphReconfig
 
             if(level == K-1)
             {
-              // On ajoue le nouvel ensemble (indep ou dominant)
-              int setId = AddVertex(currSet);
-              for(int prevId=0; prevId<setId; prevId++)
+              if((currSet is IndepSet || (currSet is DominantSet currDomSet && currDomSet.IsValid())))
               {
-                long prevStates = IndexToIs[prevId];
-                int intersectionSize = System.Numerics.BitOperations.PopCount((ulong)(currSet.States & prevStates));
-                if(intersectionSize == K-1)
+                // On ajoue le nouvel ensemble (indep ou dominant)
+                int setId = AddVertex(currSet);
+                for(int prevId=0; prevId<setId; prevId++)
                 {
-                  if(Mode == 'J')
+                  long prevStates = IndexToSet[prevId];
+                  int intersectionSize = System.Numerics.BitOperations.PopCount((ulong)(currSet.States & prevStates));
+                  if(intersectionSize == K-1)
                   {
-                    Reconfig.AddEdge(setId, prevId);
-                  }
-                  else if(Mode == 'S')
-                  {
-                    int uniqueInCurr = BaseSet.DiffBtw(currSet.States, prevStates);
-                    int uniqueInPrev = BaseSet.DiffBtw(prevStates, currSet.States);
-                    if(Graph.Vois[uniqueInCurr].Contains(uniqueInPrev)) Reconfig.AddEdge(setId, prevId);
+                    if(Mode == 'J')
+                    {
+                      Reconfig.AddEdge(setId, prevId);
+                    }
+                    else if(Mode == 'S')
+                    {
+                      int uniqueInCurr = BaseSet.DiffBtw(currSet.States, prevStates);
+                      int uniqueInPrev = BaseSet.DiffBtw(prevStates, currSet.States);
+                      if(Graph.Vois[uniqueInCurr].Contains(uniqueInPrev)) Reconfig.AddEdge(setId, prevId);
+                    }
                   }
                 }
               }
@@ -253,6 +170,6 @@ public class GraphReconfig
           }
         }
       }
-      return AllIs;
+      return AllSets;
     }
 }

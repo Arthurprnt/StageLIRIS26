@@ -78,6 +78,10 @@ public class Graph
         StringBuilder dot = new StringBuilder();
         dot.AppendLine("graph G {");
 
+        for(int i=0; i<NbVert; i++) {
+          if(Vois[i].Count() == 0) dot.AppendLine($"  \"{i}\";");
+        }
+
         for (int i = 0; i < Vois.Count; i++)
         {
             for (int j = 0; j < Vois[i].Count; j++)
