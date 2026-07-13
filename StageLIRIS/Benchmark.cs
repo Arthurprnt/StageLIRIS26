@@ -47,13 +47,30 @@ public class Benchmark
         return -1;
     }
 
+    private static void TestDirectory(string path)
+    {
+        if (!Directory.Exists(path))
+            Directory.CreateDirectory(path);
+    }
+
+    private static void CreateNeededDirectories()
+    {
+        TestDirectory("graphs_found");
+        TestDirectory("graphs_found/estimated");
+        TestDirectory("graphs_found/estimated/indep_sets");
+        TestDirectory("graphs_found/estimated/dominant_sets");
+        TestDirectory("graphs_found/indep_sets");
+        TestDirectory("graphs_found/dominant_sets");
+    }
+
     public static int CalcBiggestDiameter(
         string file,
         int n,
         int k,
         char mode,
         char setType,
-        bool estimate
+        bool estimate,
+        bool trueBiggest
     )
     {
         // Renvoie le diamètre max du graphe IS trouvé
@@ -110,23 +127,37 @@ public class Benchmark
                 + ": "
                 + maxDiam
         );
-        if (!Directory.Exists("graphs_found"))
-            Directory.CreateDirectory("graphs_found");
-        if (!Directory.Exists("graphs_found/indep_sets"))
-            Directory.CreateDirectory("graphs_found/indep_sets");
-        if (!Directory.Exists("graphs_found/dominant_sets"))
-            Directory.CreateDirectory("graphs_found/dominant_sets");
 
-        string outputFile = "graphs_found/n" + n + "k" + k + "m" + mode + "s" + setType + ".txt";
+        string setTypeString = "";
         if (setType == 'I')
-            outputFile = "graphs_found/indep_sets/n" + n + "k" + k + "m" + mode + ".txt";
+            setTypeString = "indep_sets";
         else if (setType == 'D')
-            outputFile = "graphs_found/dominant_sets/n" + n + "k" + k + "m" + mode + ".txt";
+            setTypeString = "dominant_sets";
+        CreateNeededDirectories();
+        string resultDirectory =
+            "graphs_found/" + setTypeString + "/n" + n + "k" + k + "m" + mode + "s" + setType;
+        if (!trueBiggest)
+            resultDirectory =
+                "graphs_found/estimated/"
+                + setTypeString
+                + "/n"
+                + n
+                + "k"
+                + k
+                + "m"
+                + mode
+                + "s"
+                + setType;
+        TestDirectory(resultDirectory);
+
+        string outputFile = resultDirectory + "/infos.txt";
         File.WriteAllText(outputFile, "Plus gros diamètre trouvé: " + maxDiam + "\n");
         File.AppendAllText(outputFile, "Liste des graphes (" + graphs.Count + "):\n\n");
         foreach (Graph graph in graphs)
         {
-            File.AppendAllText(outputFile, graph.Name + "\n");
+            String graphFilePath = resultDirectory + "/graphe" + graph.GetHashCode() + ".txt";
+
+            File.AppendAllText(outputFile, graphFilePath+"\n");
             File.AppendAllText(
                 outputFile,
                 "NbVert: " + graph.NbVert + ", NbEdge: " + graph.NbEdges + "\n"
@@ -136,10 +167,11 @@ public class Benchmark
                 "degMin: " + graph.DegMin() + ", degMax: " + graph.DegMax() + "\n"
             );
             File.AppendAllText(outputFile, "nbIs: " + graph.NbIs + "\n");
-            File.AppendAllText(outputFile, graph.ToDot() + "\n");
             File.AppendAllText(outputFile, "\n");
             File.AppendAllText(outputFile, "\n");
             File.AppendAllText(outputFile, "\n");
+
+            File.WriteAllText(graphFilePath, graph.ToDot());
         }
 
         return maxDiam;
@@ -186,7 +218,8 @@ public class Benchmark
             k,
             mode,
             setType,
-            estimate
+            estimate,
+            true
         );
         //RunCommand("rm", "-rf temp");
         RunCommand("rm", "temp/code" + timestamp + ".txt");
@@ -199,6 +232,7 @@ public class Benchmark
     }
 
     public static int EstimateBiggestDiameterGraph(
+        int nbGraphs,
         int n,
         int k,
         char mode,
@@ -222,7 +256,9 @@ public class Benchmark
         string commande =
             "/bin/genrang -P1/2 "
             + n
-            + " 10000000 | /bin/pickg -c1 -e"
+            + " "
+            + nbGraphs
+            + " | /bin/pickg -c1 -e"
             + (n - 1)
             + ":"
             + (n * (n - 1) / 2 - k * (k - 1) / 2 - (k - 1) * prevBiggestDiam)
@@ -240,7 +276,8 @@ public class Benchmark
             k,
             mode,
             setType,
-            estimate
+            estimate,
+            false
         );
         //RunCommand("rm", "-rf temp");
         RunCommand("rm", "temp/code" + timestamp + ".g6");

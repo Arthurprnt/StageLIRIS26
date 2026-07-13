@@ -68,7 +68,7 @@ static int ShowManual()
     );
     Console.WriteLine(
         "search: Will run a local search on the given graph to try finding graph with a bigger diameter for the reconfig graph."
-    ); // TODO
+    );
     Console.WriteLine(
         "upgrade: Execute the reconfig upgrading instead of finding a diameter. Only for independent sets."
     );
@@ -80,8 +80,8 @@ static int ShowManual()
     );
     Console.WriteLine("-d <depth>: The number of time it'll iterate the local search algorithm.");
     Console.WriteLine(
-        "-e: To use only if not generating a graph from a file. If used, it will only generate a fixed number of graphs respecting the given criterias."
-    ); // TODO
+        "-e: To use only if not generating a graph from a file. If used, it will only generate a fixed number of graphs and keep the ones respecting the given criterias."
+    );
     Console.WriteLine(
         "-f <file_path>: If used will run the program only for one graph (the one in the file). If not used, will run the program for all graphs of size n."
     );
@@ -106,6 +106,9 @@ static int ShowManual()
     );
     Console.WriteLine("\thog: \n\t\t0: 1 2\n\t\t1: 0 2\n\t\t2: 0 1");
     Console.WriteLine("\tgra: \n\t\tNBVERT: 3\n\t\tNBEDGES: 2\n\n\t\t0 1\n\t\t1 2\n\t\t0 2");
+    Console.WriteLine(
+        "File saving: The graphs calculated by the tool will be saved here: graphs_found/[estimated/]<set_type>/<parameters>/... There's also a file named infos.txt for each subfolder which summarizes the graphs present in the folder."
+    );
     Console.WriteLine(
         "\nPlease note that you also need to have the following nauty tools installed on your computer: geng, listg, genrang."
     );
@@ -249,7 +252,17 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
                 calcDiam = true;
             }
 
-            List<Graph> graphFound = graphe.DeepSearchLocally(d, k, mode, setType, !calcDiam);
+            var resDeepSearch = graphe.DeepSearchLocally(d, k, mode, setType, !calcDiam);
+            Console.WriteLine(
+                "Plus gros diamètre de reconfig trouvé en recherche locale: "
+                    + resDeepSearch.diameter
+            );
+            Console.WriteLine("Liste des graphs dont la reconfig a ce diamètre:");
+            for (int i = 0; i < resDeepSearch.graphs.Count(); i++)
+            {
+                Console.WriteLine();
+                Console.WriteLine(resDeepSearch.graphs[i].ToDot());
+            }
         }
     }
 }
@@ -331,13 +344,33 @@ else
     else
     {
         // Pas de file
+        int estimateIndex = Array.IndexOf(args, "-e");
         int prevDiam = 0;
         int prevDiamIndex = Array.IndexOf(args, "-p");
         if (prevDiamIndex != -1 && prevDiamIndex + 1 < args.Length)
         {
             prevDiam = int.Parse(args[prevDiamIndex + 1]);
         }
-        Benchmark.GetBiggestDiameterGraph(n, k, mode, setType, !calcDiam, prevDiam);
+
+        if (estimateIndex != -1 && estimateIndex + 1 < args.Length)
+        {
+            // On utilise l'estimation de graphs
+            int nbGraphs = int.Parse(args[estimateIndex + 1]);
+            Benchmark.EstimateBiggestDiameterGraph(
+                nbGraphs,
+                n,
+                k,
+                mode,
+                setType,
+                !calcDiam,
+                prevDiam
+            );
+        }
+        else
+        {
+            // On trouve tous les graphes respectant le critère demandé
+            Benchmark.GetBiggestDiameterGraph(n, k, mode, setType, !calcDiam, prevDiam);
+        }
     }
 }
 

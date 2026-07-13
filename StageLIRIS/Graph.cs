@@ -557,7 +557,12 @@ public class Graph
         return bigDiam;
     }
 
-    public List<Graph> SearchLocally(int k, char mode, char setType, bool estimate = true)
+    public (int diameter, List<Graph> graphs) SearchLocally(
+        int k,
+        char mode,
+        char setType,
+        bool estimate = true
+    )
     {
         if (!IsMatSync)
             throw new Exception("The matrice must be syncronised to search locally.");
@@ -587,6 +592,20 @@ public class Graph
                     // Il y a déjà une arête entre i et j
                     int prevNbEdges = NbEdges;
                     RemoveEdge(i, j);
+
+                    // On cherche juste en retirant l'arrête
+                    int tempDiam = GetDiamOfReconfig(k, mode, setType, estimate);
+                    if (tempDiam > biggestDiam)
+                    {
+                        graphsFound.Clear();
+                        graphsFound.Add(Clone());
+                        biggestDiam = tempDiam;
+                    }
+                    else if (tempDiam == biggestDiam)
+                    {
+                        graphsFound.Add(Clone());
+                    }
+
                     for (int m = 0; m < NbVert; m++)
                     {
                         for (int l = m + 1; l < NbVert; l++)
@@ -611,10 +630,10 @@ public class Graph
             }
         }
 
-        return graphsFound;
+        return (biggestDiam, graphsFound);
     }
 
-    public List<Graph> DeepSearchLocally(
+    public (int diameter, List<Graph> graphs) DeepSearchLocally(
         int depth,
         int k,
         char mode,
@@ -624,16 +643,17 @@ public class Graph
     {
         int tryLeft = depth - 1;
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
-        List<Graph> graCollection = SearchLocally(k, mode, setType, estimate);
+        List<Graph> graCollection = SearchLocally(k, mode, setType, estimate).graphs;
         List<Graph> graFound = new List<Graph>();
         List<int> graStocked = new List<int>();
         while (tryLeft > 0)
         {
             graStocked.Clear();
-            Console.WriteLine("taille de la liste: " + graCollection.Count());
             for (int i = 0; i < graCollection.Count(); i++)
             {
-                graFound.AddRange(graCollection[i].SearchLocally(k, mode, setType, estimate));
+                graFound.AddRange(
+                    graCollection[i].SearchLocally(k, mode, setType, estimate).graphs
+                );
             }
             graCollection.Clear();
             //int biggestDiam = graFound[0].GetDiamOfReconfig(k, mode, setType, estimate);
@@ -660,6 +680,6 @@ public class Graph
             graFound.Clear();
             tryLeft--;
         }
-        return graCollection;
+        return (biggestDiam, graCollection);
     }
 }
