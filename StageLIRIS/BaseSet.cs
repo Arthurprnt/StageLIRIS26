@@ -17,7 +17,7 @@ public abstract class BaseSet
 
     public override int GetHashCode()
     {
-      return States.GetHashCode();
+        return States.GetHashCode();
     }
 
     public abstract BaseSet Clone();
@@ -25,8 +25,10 @@ public abstract class BaseSet
     public void Set(int ind, bool val)
     {
         // Setter du tableau States
-        if (val) States += 1L << ind;
-        else States -= 1L << ind;
+        if (val)
+            States += 1L << ind;
+        else
+            States -= 1L << ind;
     }
 
     public bool Get(int ind)
@@ -34,7 +36,7 @@ public abstract class BaseSet
         // Getter du tableau States
         return (States & (1L << ind)) != 0;
     }
-    
+
     public static bool Get(long states, int ind)
     {
         // Getter du tableau States
@@ -86,7 +88,7 @@ public abstract class BaseSet
             CurrSize++;
         }
     }
-    
+
     public void RemoveVert(int vert)
     {
         // L'enlève de l'IS
@@ -103,7 +105,8 @@ public abstract class BaseSet
         AddVert(newVert);
     }
 
-    public static BaseSet? CreateSet(Graph graph, int k, int from) {
+    public static BaseSet? CreateSet(Graph graph, int k, int from)
+    {
         return null;
     }
 
@@ -111,10 +114,11 @@ public abstract class BaseSet
 
     public static int DiffBtw(long s1, long s2)
     {
-      // Optimisé à la mort par IA (j'avoue mon crime)
-      ulong masque = (ulong)(s1 & ~s2);
-      if (masque == 0) throw new Exception("Il n'y a aucune différence entre les deux long fournis."); 
-      // Compter les zéros de droite (Trailing Zeros) pour trouver l'indice du premier bit à 1
-      return BitOperations.TrailingZeroCount(masque);
+        // Optimisé à la mort par IA (j'avoue mon crime)
+        ulong masque = (ulong)(s1 & ~s2);
+        if (masque == 0)
+            throw new Exception("Il n'y a aucune différence entre les deux long fournis.");
+        // Compter les zéros de droite (Trailing Zeros) pour trouver l'indice du premier bit à 1
+        return BitOperations.TrailingZeroCount(masque);
     }
 }

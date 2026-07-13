@@ -4,15 +4,15 @@ public class GraphGenerator
 {
     // Permet de générer des graphes en mémoire à partir de fichiers
     // Il y a deux formats de fichiers accepté:
-        // Les 'gra':
-            // NB_VERTICES: 9
-            // NB_EDGES: 14
-            // 
-            // Liste des arêtes au format suivant:
-            // Vert1 Vert2
-        // Les 'hog':
-            // Liste des listes d'adjacences au format suivant:
-            // Vert: Vois1 Vois2 ... VoisN
+    // Les 'gra':
+    // NB_VERTICES: 9
+    // NB_EDGES: 14
+    //
+    // Liste des arêtes au format suivant:
+    // Vert1 Vert2
+    // Les 'hog':
+    // Liste des listes d'adjacences au format suivant:
+    // Vert: Vois1 Vois2 ... VoisN
 
     public static Graph GetGraGraph(string filePath)
     {
@@ -21,9 +21,9 @@ public class GraphGenerator
         // Données graph
         int nbVertices = int.Parse(lines[0].Split(' ')[1]);
         int nbEdges = int.Parse(lines[1].Split(' ')[1]);
-        
+
         Graph graph = new Graph(nbVertices, filePath);
-        
+
         // Traitement des aretes
         for (int i = 3; i < 3 + nbEdges; i++)
         {
@@ -41,9 +41,9 @@ public class GraphGenerator
 
         // Données graph
         int nbVertices = lines.Length;
-        
+
         Graph graph = new Graph(nbVertices, filePath);
-        
+
         // Traitement des aretes
         for (int i = 0; i < nbVertices; i++)
         {
@@ -62,30 +62,31 @@ public class GraphGenerator
 
     public static Graph GetDotGraph(string filePath)
     {
-      // Génère un graphe à partir d'un fichier au format .dot
-      string[] lines = File.ReadAllLines(filePath);
+        // Génère un graphe à partir d'un fichier au format .dot
+        string[] lines = File.ReadAllLines(filePath);
 
-      Graph graph = new Graph(0, filePath);
+        Graph graph = new Graph(0, filePath);
 
-      for(int i=1; i<lines.Count()-1; i++)
-      {
-        string[] lineSplit = lines[i].Split('"');
-        int from = int.Parse(lineSplit[1]);
-        int to = int.Parse(lineSplit[3]);
-        while(graph.NbVert < from+1 || graph.NbVert < to+1)
+        for (int i = 1; i < lines.Count() - 1; i++)
         {
-          graph.AddVertex();
+            string[] lineSplit = lines[i].Split('"');
+            int from = int.Parse(lineSplit[1]);
+            int to = int.Parse(lineSplit[3]);
+            while (graph.NbVert < from + 1 || graph.NbVert < to + 1)
+            {
+                graph.AddVertex();
+            }
+            graph.AddEdge(from, to);
         }
-        graph.AddEdge(from, to);
-      }
-      return graph;
+        graph.RebuildMat();
+        return graph;
     }
 
     public static Graph GetListgGraph(string[] lines)
     {
         // Génère un graphe à partir d'un fichier output.txt généré par listg
         // Pioche le graphe qui se situe entre les lignes startLine et endLine
-        
+
         // Données graph
         int nbVertices = lines.Length;
 
