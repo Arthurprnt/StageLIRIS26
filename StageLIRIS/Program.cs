@@ -115,6 +115,7 @@ Stopwatch stopwatch = new Stopwatch();
 stopwatch.Start();
 
 bool useVerb = !Console.IsOutputRedirected;
+bool usePipeInput = Console.IsInputRedirected;
 
 int helpIndex = Array.IndexOf(args, "-h");
 if (helpIndex != -1)
@@ -146,35 +147,40 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
         return ShowErrorMultiParam();
 
     int fileIndex = Array.IndexOf(args, "-f");
-    if (!(fileIndex != -1 && fileIndex + 1 < args.Length))
+    if (!(fileIndex != -1 && fileIndex + 1 < args.Length) && !usePipeInput)
         return ShowError("f");
 
     string file = args[fileIndex + 1];
-    if (!File.Exists(file))
+    if (!File.Exists(file) && !usePipeInput)
         return ShowError("f");
 
     int fileTypeIndex = Array.IndexOf(args, "-t");
-    if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length))
+    if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
         return ShowError("t");
 
     string types = args[fileTypeIndex + 1].ToLower();
     string[] possibleTypes = { "dot", "hog", "gra" };
-    if (!possibleTypes.Contains(types))
+    if (!possibleTypes.Contains(types) && !usePipeInput)
         return ShowError("t");
 
     Graph graphe = new Graph(1);
-    switch (types)
+    if (!usePipeInput)
     {
-        case "dot":
-            graphe = GraphGenerator.GetDotGraph(file);
-            break;
-        case "hog":
-            graphe = GraphGenerator.GetHogGraph(file);
-            break;
-        case "gra":
-            graphe = GraphGenerator.GetGraGraph(file);
-            break;
+        switch (types)
+        {
+            case "dot":
+                graphe = GraphGenerator.GetDotGraph(file);
+                break;
+            case "hog":
+                graphe = GraphGenerator.GetHogGraph(file);
+                break;
+            case "gra":
+                graphe = GraphGenerator.GetGraGraph(file);
+                break;
+        }
     }
+    else
+        graphe = GraphGenerator.GetPipeGraph();
 
     if (upIndex != -1)
     {
@@ -302,34 +308,39 @@ else
     }
     int k = int.Parse(args[kIndex + 1]);
     int fileIndex = Array.IndexOf(args, "-f");
-    if (fileIndex != -1 && fileIndex + 1 < args.Length)
+    if ((fileIndex != -1 && fileIndex + 1 < args.Length) || usePipeInput)
     {
         string file = args[fileIndex + 1];
-        if (!File.Exists(file))
+        if (!File.Exists(file) && !usePipeInput)
             return ShowError("f");
 
         int fileTypeIndex = Array.IndexOf(args, "-t");
-        if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length))
+        if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
             return ShowError("t");
 
         string types = args[fileTypeIndex + 1].ToLower();
         string[] possibleTypes = { "dot", "hog", "gra" };
-        if (!possibleTypes.Contains(types))
+        if (!possibleTypes.Contains(types) && !usePipeInput)
             return ShowError("t");
 
         Graph graphe = new Graph(n);
-        switch (types)
+        if (!usePipeInput)
         {
-            case "dot":
-                graphe = GraphGenerator.GetDotGraph(file);
-                break;
-            case "hog":
-                graphe = GraphGenerator.GetHogGraph(file);
-                break;
-            case "gra":
-                graphe = GraphGenerator.GetGraGraph(file);
-                break;
+            switch (types)
+            {
+                case "dot":
+                    graphe = GraphGenerator.GetDotGraph(file);
+                    break;
+                case "hog":
+                    graphe = GraphGenerator.GetHogGraph(file);
+                    break;
+                case "gra":
+                    graphe = GraphGenerator.GetGraGraph(file);
+                    break;
+            }
         }
+        else
+            graphe = GraphGenerator.GetPipeGraph();
 
         GraphReconfig reconfig = new GraphReconfig(graphe, k, mode, setType);
         reconfig.CalcAllSetsIte();

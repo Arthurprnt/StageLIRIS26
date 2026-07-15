@@ -4,7 +4,7 @@ namespace StageLIRIS;
 
 public class Benchmark
 {
-    static string RunCommand(string command, string args = "")
+    private static string RunCommand(string command, string args = "")
     {
         var psi = new ProcessStartInfo();
         psi.FileName = command;
@@ -24,9 +24,18 @@ public class Benchmark
         return "";
     }
 
-    public static double roundTo2Decimals(double nb)
+    private static double roundTo2Decimals(double nb)
     {
         return Math.Truncate(nb * 100) / 100;
+    }
+
+    public static IEnumerable<string> ReadFromPipeInput()
+    {
+        string? line;
+        while ((line = Console.ReadLine()) != null)
+        {
+            yield return line;
+        }
     }
 
     public static int GetDiamOfIsGraph(Graph graph, int k, char mode, char setType, bool estimate)
@@ -130,7 +139,7 @@ public class Benchmark
                     + maxDiam
             );
         else
-            Console.WriteLine(maxDiam);
+            Console.Write(graphs[0].ToDot());
 
         string setTypeString = "";
         if (setType == 'I')

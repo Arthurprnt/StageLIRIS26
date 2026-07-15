@@ -107,4 +107,32 @@ public class GraphGenerator
 
         return graph;
     }
+
+    public static Graph GetPipeGraph()
+    {
+        int i = 0;
+        bool continu = true;
+
+        Graph graph = new Graph(0, "PipeGraph");
+
+        foreach (string line in Benchmark.ReadFromPipeInput())
+        {
+            if (line == "}")
+                continu = false;
+            if (i > 0 && continu)
+            {
+                string[] lineSplit = line.Split('"');
+                int from = int.Parse(lineSplit[1]);
+                int to = int.Parse(lineSplit[3]);
+                while (graph.NbVert < from + 1 || graph.NbVert < to + 1)
+                {
+                    graph.AddVertex();
+                }
+                graph.AddEdge(from, to);
+            }
+            i++;
+        }
+        graph.RebuildMat();
+        return graph;
+    }
 }
