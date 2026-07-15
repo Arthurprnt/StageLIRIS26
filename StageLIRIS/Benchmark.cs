@@ -75,6 +75,7 @@ public class Benchmark
     {
         // Renvoie le diamètre max du graphe IS trouvé
         // Ecrit les graphes trouvés dans le fichier graphs_found/n<n>k<k>.txt
+        bool useVerb = !Console.IsOutputRedirected;
         List<Graph> graphs = new List<Graph>();
         int maxDiam = 0;
 
@@ -119,14 +120,17 @@ public class Benchmark
             }
         }
 
-        Console.WriteLine(
-            "Plus gros diamètre trouvé pour les graphes de reconfig avec n="
-                + n
-                + " et k="
-                + k
-                + ": "
-                + maxDiam
-        );
+        if (useVerb)
+            Console.WriteLine(
+                "Plus gros diamètre trouvé pour les graphes de reconfig avec n="
+                    + n
+                    + " et k="
+                    + k
+                    + ": "
+                    + maxDiam
+            );
+        else
+            Console.WriteLine(maxDiam);
 
         string setTypeString = "";
         if (setType == 'I')
@@ -157,7 +161,7 @@ public class Benchmark
         {
             String graphFilePath = resultDirectory + "/graphe" + graph.GetHashCode() + ".txt";
 
-            File.AppendAllText(outputFile, graphFilePath+"\n");
+            File.AppendAllText(outputFile, graphFilePath + "\n");
             File.AppendAllText(
                 outputFile,
                 "NbVert: " + graph.NbVert + ", NbEdge: " + graph.NbEdges + "\n"

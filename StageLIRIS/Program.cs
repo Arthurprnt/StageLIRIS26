@@ -16,42 +16,38 @@ Vers windobe:
 
 static int ShowUsages()
 {
-    Console.WriteLine(
+    Console.Error.WriteLine(
         "Default usage: ./StageLIRIS -m <mode> -s <set_type> -n <nb_vert> -k <set_size> [-f <file_path>] [-t <file_type>] [-e <graph_nb>] [-c] [-p <prev_diam>]"
     );
-    Console.WriteLine(
+    Console.Error.WriteLine(
         "Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <set_size> -f <file_path> -t <file_type>"
     );
-    Console.WriteLine(
+    Console.Error.WriteLine(
         "Local search usage: ./StageLIRIS search -m <mode> -s <set_type> -d <search_depth> -k <set_size> -f <file_path> -t <file_type>"
     );
-    Console.WriteLine(
+    Console.Error.WriteLine(
         "Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>"
     );
-    Console.WriteLine("Run './StageLIRIS -h' for help.");
-    Console.WriteLine("\n");
+    Console.Error.WriteLine("Run './StageLIRIS -h' for help.\n");
     return 1;
 }
 
 static int ShowError(string param)
 {
-    Console.WriteLine("\n");
-    Console.WriteLine("Error: Missing required argument '-" + param + " <value>'.");
+    Console.Error.WriteLine("\nError: Missing required argument '-" + param + " <value>'.");
     return ShowUsages();
 }
 
 static int ShowErrorMultiParam()
 {
-    Console.WriteLine("\n");
-    Console.WriteLine("Error: You're using too much arguments.");
+    Console.Error.WriteLine("\nError: You're using too much arguments.");
     return ShowUsages();
 }
 
 static int ShowManual()
 {
-    Console.WriteLine("\n");
     Console.WriteLine(
-        "Default usage: ./StageLIRIS -m <mode> -s <set_type> -n <nb_vert> -k <set_size> [-f <file_path>] [-t <file_type>] [-e <graph_nb>] [-c] [-p <prev_diam>]"
+        "\nDefault usage: ./StageLIRIS -m <mode> -s <set_type> -n <nb_vert> -k <set_size> [-f <file_path>] [-t <file_type>] [-e <graph_nb>] [-c] [-p <prev_diam>]"
     );
     Console.WriteLine(
         "Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <set_size> -f <file_path> -t <file_type>"
@@ -110,14 +106,15 @@ static int ShowManual()
         "File saving: The graphs calculated by the tool will be saved here: graphs_found/[estimated/]<set_type>/<parameters>/... There's also a file named infos.txt for each subfolder which summarizes the graphs present in the folder."
     );
     Console.WriteLine(
-        "\nPlease note that you also need to have the following nauty tools installed on your computer: geng, listg, genrang."
+        "\nPlease note that you also need to have the following nauty tools installed on your computer: geng, listg, genrang.\n"
     );
-    Console.WriteLine("\n");
     return 1;
 }
 
 Stopwatch stopwatch = new Stopwatch();
 stopwatch.Start();
+
+bool useVerb = !Console.IsOutputRedirected;
 
 int helpIndex = Array.IndexOf(args, "-h");
 if (helpIndex != -1)
@@ -203,11 +200,14 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
             beta.AddVert(int.Parse(args[betaIndex + i]));
         }
         Graph upgradedGraph = graphe.UpgradeGraph(alpha, beta);
-        Console.WriteLine("Graphe amélioré:");
+        if (useVerb)
+            Console.WriteLine("Graphe amélioré:");
         Console.WriteLine(upgradedGraph.ToDot());
-        Console.WriteLine("Nouveau alpha:");
+        if (useVerb)
+            Console.WriteLine("Nouveau alpha:");
         alpha.Write();
-        Console.WriteLine("Nouveau beta:");
+        if (useVerb)
+            Console.WriteLine("Nouveau beta:");
         beta.Write();
     }
     else
@@ -233,8 +233,11 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
             // Using the reconfiguration mode
             GraphReconfig graphReconfig = new GraphReconfig(graphe, k, mode, setType);
             graphReconfig.CalcAllSetsIte();
-            Console.WriteLine("Graphe reconfiguré du graphe " + file + ":");
-            Console.WriteLine(graphReconfig.ToDot());
+            if (useVerb)
+                Console.WriteLine("Graphe reconfiguré du graphe " + file + ":");
+            Console.Write(graphReconfig.ToDot());
+            if (useVerb)
+                Console.WriteLine();
         }
         else
         {
@@ -253,15 +256,19 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
             }
 
             var resDeepSearch = graphe.DeepSearchLocally(d, k, mode, setType, !calcDiam);
-            Console.WriteLine(
-                "Plus gros diamètre de reconfig trouvé en recherche locale: "
-                    + resDeepSearch.diameter
-            );
-            Console.WriteLine("Liste des graphs dont la reconfig a ce diamètre:");
+            if (useVerb)
+            {
+                Console.WriteLine(
+                    "Plus gros diamètre de reconfig trouvé en recherche locale: "
+                        + resDeepSearch.diameter
+                );
+                Console.WriteLine("Liste des graphs dont la reconfig a ce diamètre:");
+            }
             for (int i = 0; i < resDeepSearch.graphs.Count(); i++)
             {
-                Console.WriteLine();
-                Console.WriteLine(resDeepSearch.graphs[i].ToDot());
+                if (i > 0)
+                    Console.WriteLine();
+                Console.Write(resDeepSearch.graphs[i].ToDot());
             }
         }
     }
@@ -326,20 +333,30 @@ else
 
         GraphReconfig reconfig = new GraphReconfig(graphe, k, mode, setType);
         reconfig.CalcAllSetsIte();
-        if (calcDiam)
-            Console.WriteLine(
-                "Diamètre calculé du graphe de reconfig pour "
-                    + file
-                    + $": "
-                    + reconfig.Reconfig.GetDiameter()
-            );
+        if (useVerb)
+        {
+            if (calcDiam)
+                Console.WriteLine(
+                    "Diamètre calculé du graphe de reconfig pour "
+                        + file
+                        + $": "
+                        + reconfig.Reconfig.GetDiameter()
+                );
+            else
+                Console.WriteLine(
+                    "Diamètre estimé du graphe de reconfig pour "
+                        + file
+                        + $": "
+                        + reconfig.Reconfig.EstimateDiameter()
+                );
+        }
         else
-            Console.WriteLine(
-                "Diamètre estimé du graphe de reconfig pour "
-                    + file
-                    + $": "
-                    + reconfig.Reconfig.EstimateDiameter()
-            );
+        {
+            if (calcDiam)
+                Console.WriteLine(reconfig.Reconfig.GetDiameter());
+            else
+                Console.WriteLine(reconfig.Reconfig.EstimateDiameter());
+        }
     }
     else
     {
@@ -375,10 +392,11 @@ else
 }
 
 stopwatch.Stop();
-Console.WriteLine(
-    "Programme éxécuté en "
-        + Math.Round((double)stopwatch.Elapsed.TotalMilliseconds / 1000, 2)
-        + " secondes."
-);
+if (useVerb)
+    Console.WriteLine(
+        "Programme éxécuté en "
+            + Math.Round((double)stopwatch.Elapsed.TotalMilliseconds / 1000, 2)
+            + " secondes."
+    );
 
 return 0;
