@@ -8,6 +8,8 @@ Pour que les fonctions d'obtention de plus gros diamètres fonctionne,
 il faut impérativement installer les outils nauty (geng, listg, genrang)
 
 Pour recompiler le programme:
+En debug:
+    dotnet build -c Debug
 Vers linux:
     dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 Vers windobe:
@@ -23,12 +25,13 @@ static int ShowUsages()
         "Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <set_size> -f <file_path> -t <file_type>"
     );
     Console.Error.WriteLine(
-        "Local search usage: ./StageLIRIS search -m <mode> -s <set_type> -d <search_depth> -k <set_size> -f <file_path> -t <file_type>"
+        "Local search usage: ./StageLIRIS search -m <mode> -s <set_type> -d <search_depth> -k <set_size> -f <file_path> -t <file_type> [-l <limit>] [-e <edge_nb>] [-c]"
     );
     Console.Error.WriteLine(
         "Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>"
     );
     Console.Error.WriteLine("Run './StageLIRIS -h' for help.\n");
+    Environment.Exit(1);
     return 1;
 }
 
@@ -53,7 +56,7 @@ static int ShowManual()
         "Reconfig usage: ./StageLIRIS reconfig -m <mode> -s <set_type> -k <set_size> -f <file_path> -t <file_type>"
     );
     Console.WriteLine(
-        "Local search usage: ./StageLIRIS search -m <mode> -s <set_type> -d <search_depth> -k <set_size> -f <file_path> -t <file_type> [-c]"
+        "Local search usage: ./StageLIRIS search -m <mode> -s <set_type> -d <search_depth> -k <set_size> -f <file_path> -t <file_type> [-l <limit>] [-e <edge_nb>] [-c]"
     );
     Console.WriteLine(
         "Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>"
@@ -76,13 +79,19 @@ static int ShowManual()
     );
     Console.WriteLine("-d <depth>: The number of time it'll iterate the local search algorithm.");
     Console.WriteLine(
-        "-e: To use only if not generating a graph from a file. If used, it will only generate a fixed number of graphs and keep the ones respecting the given criterias."
+        "-e <edge_nb>: The number of time the tool will try to add, switch or remove an edge from the graph. Highly recommanded from graphs over 12 vertices because else it's O(n^8)."
+    );
+    Console.WriteLine(
+        "-e <graph_nb>: To use only if not generating a graph from a file. If used, it will only generate a fixed number of graphs and keep the ones respecting the given criterias."
     );
     Console.WriteLine(
         "-f <file_path>: If used will run the program only for one graph (the one in the file). If not used, will run the program for all graphs of size n."
     );
     Console.WriteLine(
         "-k <indep_size>: The size of the independent sets used for the reconfig graph(s)."
+    );
+    Console.WriteLine(
+        "-l <limit>: Limit the number of graphs kept on each layer of the deep search."
     );
     Console.WriteLine(
         "-m <mode>: Can either be J or S. J is for token jumping and S is for token sliding."
@@ -111,27 +120,39 @@ static int ShowManual()
     return 1;
 }
 
-Stopwatch stopwatch = new Stopwatch();
-stopwatch.Start();
-
+// Pipe parameters
 bool useVerb = !Console.IsOutputRedirected;
 bool usePipeInput = Console.IsInputRedirected;
 
-int helpIndex = Array.IndexOf(args, "-h");
-if (helpIndex != -1)
-    return ShowManual();
-
+// Mode parameters
+int reconfigIndex = Array.IndexOf(args, "reconfig");
+if (reconfigIndex == -1)
+    reconfigIndex = Array.IndexOf(args, "r");
+int searchIndex = Array.IndexOf(args, "search");
+if (searchIndex == -1)
+    searchIndex = Array.IndexOf(args, "s");
 int upIndex = Array.IndexOf(args, "updrade");
 if (upIndex == -1)
     upIndex = Array.IndexOf(args, "u");
 
-int reconfigIndex = Array.IndexOf(args, "reconfig");
-if (reconfigIndex == -1)
-    reconfigIndex = Array.IndexOf(args, "r");
+// Variables parameters
+int calcIndex = Array.IndexOf(args, "-c");
+int eIndex = Array.IndexOf(args, "-e");
+int fileIndex = Array.IndexOf(args, "-f");
+int helpIndex = Array.IndexOf(args, "-h");
+if (helpIndex != -1)
+    return ShowManual();
+int kIndex = Array.IndexOf(args, "-k");
+if (!(kIndex != -1 && kIndex + 1 < args.Length))
+    return ShowError("k");
+int k = int.Parse(args[kIndex + 1]);
+int modeIndex = Array.IndexOf(args, "-m");
+int nIndex = Array.IndexOf(args, "-n");
+int setTypeIndex = Array.IndexOf(args, "-s");
+int fileTypeIndex = Array.IndexOf(args, "-t");
 
-int searchIndex = Array.IndexOf(args, "search");
-if (searchIndex == -1)
-    searchIndex = Array.IndexOf(args, "s");
+Stopwatch stopwatch = new Stopwatch();
+stopwatch.Start();
 
 if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
 {
@@ -146,7 +167,6 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
     if (nbUsed > 1)
         return ShowErrorMultiParam();
 
-    int fileIndex = Array.IndexOf(args, "-f");
     if (!(fileIndex != -1 && fileIndex + 1 < args.Length) && !usePipeInput)
         return ShowError("f");
 
@@ -154,7 +174,6 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
     if (!File.Exists(file) && !usePipeInput)
         return ShowError("f");
 
-    int fileTypeIndex = Array.IndexOf(args, "-t");
     if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
         return ShowError("t");
 
@@ -163,49 +182,51 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
     if (!possibleTypes.Contains(types) && !usePipeInput)
         return ShowError("t");
 
-    Graph graphe = new Graph(1);
+    List<Graph> graphes = new List<Graph>();
     if (!usePipeInput)
     {
         switch (types)
         {
             case "dot":
-                graphe = GraphGenerator.GetDotGraph(file);
+                graphes.Add(GraphGenerator.GetDotGraph(file));
                 break;
             case "hog":
-                graphe = GraphGenerator.GetHogGraph(file);
+                graphes.Add(GraphGenerator.GetHogGraph(file));
                 break;
             case "gra":
-                graphe = GraphGenerator.GetGraGraph(file);
+                graphes.Add(GraphGenerator.GetGraGraph(file));
                 break;
         }
     }
     else
-        graphe = GraphGenerator.GetPipeGraph();
+    {
+        graphes = GraphGenerator.GetPipeGraph();
+        if (graphes.Count() == 0)
+        {
+            Console.Error.WriteLine("No graph was found in the pipe. Aborting...\n");
+            Environment.Exit(1);
+        }
+    }
 
     if (upIndex != -1)
     {
         // Using the upgrading mode
-        int sizeIndex = Array.IndexOf(args, "-s");
-        if (!(sizeIndex != -1 && sizeIndex + 1 < args.Length))
-            return ShowError("s");
-
-        int isSize = int.Parse(args[sizeIndex + 1]);
         int alphaIndex = Array.IndexOf(args, "-a");
-        if (!(alphaIndex != -1 && alphaIndex + isSize < args.Length))
+        if (!(alphaIndex != -1 && alphaIndex + k < args.Length))
             return ShowError("a");
 
         int betaIndex = Array.IndexOf(args, "-b");
-        if (!(betaIndex != -1 && betaIndex + isSize < args.Length))
+        if (!(betaIndex != -1 && betaIndex + k < args.Length))
             return ShowError("b");
 
-        IndepSet alpha = new IndepSet(graphe, isSize);
-        IndepSet beta = new IndepSet(graphe, isSize);
-        for (int i = 1; i <= isSize; i++)
+        IndepSet alpha = new IndepSet(graphes[0], k);
+        IndepSet beta = new IndepSet(graphes[0], k);
+        for (int i = 1; i <= k; i++)
         {
             alpha.AddVert(int.Parse(args[alphaIndex + i]));
             beta.AddVert(int.Parse(args[betaIndex + i]));
         }
-        Graph upgradedGraph = graphe.UpgradeGraph(alpha, beta);
+        Graph upgradedGraph = graphes[0].UpgradeGraph(alpha, beta);
         if (useVerb)
             Console.WriteLine("Graphe amélioré:");
         Console.WriteLine(upgradedGraph.ToDot());
@@ -218,16 +239,12 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
     }
     else
     {
-        int kIndex = Array.IndexOf(args, "-k");
         if (!(kIndex != -1 && kIndex + 1 < args.Length))
             return ShowError("k");
 
-        int k = int.Parse(args[kIndex + 1]);
-        int modeIndex = Array.IndexOf(args, "-m");
         if (!(modeIndex != -1 && modeIndex + 1 < args.Length))
             return ShowError("m");
 
-        int setTypeIndex = Array.IndexOf(args, "-s");
         if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length))
             return ShowError("s");
         char setType = char.Parse(args[setTypeIndex + 1]);
@@ -237,13 +254,18 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
         if (reconfigIndex != -1)
         {
             // Using the reconfiguration mode
-            GraphReconfig graphReconfig = new GraphReconfig(graphe, k, mode, setType);
-            graphReconfig.CalcAllSetsIte();
-            if (useVerb)
-                Console.WriteLine("Graphe reconfiguré du graphe " + file + ":");
-            Console.Write(graphReconfig.ToDot());
-            if (useVerb)
-                Console.WriteLine();
+            for (int i = 0; i < graphes.Count(); i++)
+            {
+                if (i > 0)
+                    Console.WriteLine();
+                GraphReconfig graphReconfig = new GraphReconfig(graphes[i], k, mode, setType);
+                graphReconfig.CalcAllSetsIte();
+                if (useVerb)
+                    Console.WriteLine("Graphe reconfiguré du graphe " + file + ":");
+                Console.Write(graphReconfig.ToDot());
+                if (useVerb)
+                    Console.WriteLine();
+            }
         }
         else
         {
@@ -252,69 +274,82 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
             if (!(depthIndex != -1 && depthIndex + 1 < args.Length))
                 return ShowError("d");
 
+            int edgeLimit = -1;
+            if (eIndex != -1 && eIndex + 1 < args.Length)
+                edgeLimit = int.Parse(args[eIndex + 1]);
+
             int d = int.Parse(args[depthIndex + 1]);
 
+            int lim = -1;
+            int limIndex = Array.IndexOf(args, "-l");
+            if (limIndex != -1 && limIndex + 1 < args.Length)
+                lim = int.Parse(args[limIndex + 1]);
+
             bool calcDiam = false;
-            int calcIndex = Array.IndexOf(args, "-c");
             if (calcIndex != -1)
             {
                 calcDiam = true;
             }
 
-            var resDeepSearch = graphe.DeepSearchLocally(d, k, mode, setType, !calcDiam);
-            if (useVerb)
+            int biggestDiam = -1;
+            List<Graph> bestGraphs = new List<Graph>();
+
+            for (int i = 0; i < graphes.Count(); i++)
             {
-                Console.WriteLine(
-                    "Plus gros diamètre de reconfig trouvé en recherche locale: "
-                        + resDeepSearch.diameter
-                );
-                Console.WriteLine("Liste des graphs dont la reconfig a ce diamètre:");
+                var resDeepSearch = graphes[i]
+                    .DeepSearchLocally(d, k, mode, setType, !calcDiam, lim, edgeLimit);
+                if (resDeepSearch.diameter > biggestDiam)
+                {
+                    biggestDiam = resDeepSearch.diameter;
+                    bestGraphs.Clear();
+                    bestGraphs.AddRange(resDeepSearch.graphs);
+                }
+                else if (resDeepSearch.diameter == biggestDiam)
+                {
+                    bestGraphs.AddRange(resDeepSearch.graphs);
+                }
             }
-            for (int i = 0; i < resDeepSearch.graphs.Count(); i++)
+            for (int i = 0; i < bestGraphs.Count(); i++)
             {
                 if (i > 0)
                     Console.WriteLine();
-                Console.Write(resDeepSearch.graphs[i].ToDot());
+                Console.Write(bestGraphs[i].ToDot());
             }
+            if (useVerb)
+                Console.WriteLine(
+                    "\nPlus gros diamètre de reconfig trouvé en recherche locale: " + biggestDiam
+                );
         }
     }
 }
 else
 {
-    int modeIndex = Array.IndexOf(args, "-m");
     if (!(modeIndex != -1 && modeIndex + 1 < args.Length))
         return ShowError("m");
 
     char mode = char.Parse(args[modeIndex + 1]);
-    int nIndex = Array.IndexOf(args, "-n");
     if (!(nIndex != -1 && nIndex + 1 < args.Length))
         return ShowError("n");
 
     int n = int.Parse(args[nIndex + 1]);
-    int kIndex = Array.IndexOf(args, "-k");
-    if (!(kIndex != -1 && kIndex + 1 < args.Length))
-        return ShowError("k");
 
-    int setTypeIndex = Array.IndexOf(args, "-s");
     if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length))
         return ShowError("s");
     char setType = char.Parse(args[setTypeIndex + 1]);
 
     bool calcDiam = false;
-    int calcIndex = Array.IndexOf(args, "-c");
     if (calcIndex != -1)
     {
         calcDiam = true;
     }
-    int k = int.Parse(args[kIndex + 1]);
-    int fileIndex = Array.IndexOf(args, "-f");
     if ((fileIndex != -1 && fileIndex + 1 < args.Length) || usePipeInput)
     {
         string file = args[fileIndex + 1];
+        if (fileIndex == -1)
+            file = "Nameless";
         if (!File.Exists(file) && !usePipeInput)
             return ShowError("f");
 
-        int fileTypeIndex = Array.IndexOf(args, "-t");
         if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
             return ShowError("t");
 
@@ -323,56 +358,67 @@ else
         if (!possibleTypes.Contains(types) && !usePipeInput)
             return ShowError("t");
 
-        Graph graphe = new Graph(n);
+        List<Graph> graphes = new List<Graph>();
         if (!usePipeInput)
         {
             switch (types)
             {
                 case "dot":
-                    graphe = GraphGenerator.GetDotGraph(file);
+                    graphes.Add(GraphGenerator.GetDotGraph(file));
                     break;
                 case "hog":
-                    graphe = GraphGenerator.GetHogGraph(file);
+                    graphes.Add(GraphGenerator.GetHogGraph(file));
                     break;
                 case "gra":
-                    graphe = GraphGenerator.GetGraGraph(file);
+                    graphes.Add(GraphGenerator.GetGraGraph(file));
                     break;
             }
         }
         else
-            graphe = GraphGenerator.GetPipeGraph();
-
-        GraphReconfig reconfig = new GraphReconfig(graphe, k, mode, setType);
-        reconfig.CalcAllSetsIte();
-        if (useVerb)
         {
-            if (calcDiam)
-                Console.WriteLine(
-                    "Diamètre calculé du graphe de reconfig pour "
-                        + file
-                        + $": "
-                        + reconfig.Reconfig.GetDiameter()
-                );
-            else
-                Console.WriteLine(
-                    "Diamètre estimé du graphe de reconfig pour "
-                        + file
-                        + $": "
-                        + reconfig.Reconfig.EstimateDiameter()
-                );
+            graphes = GraphGenerator.GetPipeGraph();
+            if (graphes.Count() == 0)
+            {
+                Console.Error.WriteLine("No graph was found in the pipe. Aborting...\n");
+                Environment.Exit(1);
+            }
         }
-        else
+
+        for (int i = 0; i < graphes.Count(); i++)
         {
-            if (calcDiam)
-                Console.WriteLine(reconfig.Reconfig.GetDiameter());
+            if (i > 0)
+                Console.WriteLine();
+            GraphReconfig reconfig = new GraphReconfig(graphes[i], k, mode, setType);
+            reconfig.CalcAllSetsIte();
+            if (useVerb)
+            {
+                if (calcDiam)
+                    Console.WriteLine(
+                        "Diamètre calculé du graphe de reconfig pour "
+                            + file
+                            + $": "
+                            + reconfig.Reconfig.GetDiameter()
+                    );
+                else
+                    Console.WriteLine(
+                        "Diamètre estimé du graphe de reconfig pour "
+                            + file
+                            + $": "
+                            + reconfig.Reconfig.EstimateDiameter()
+                    );
+            }
             else
-                Console.WriteLine(reconfig.Reconfig.EstimateDiameter());
+            {
+                if (calcDiam)
+                    Console.WriteLine(reconfig.Reconfig.GetDiameter());
+                else
+                    Console.WriteLine(reconfig.Reconfig.EstimateDiameter());
+            }
         }
     }
     else
     {
         // Pas de file
-        int estimateIndex = Array.IndexOf(args, "-e");
         int prevDiam = 0;
         int prevDiamIndex = Array.IndexOf(args, "-p");
         if (prevDiamIndex != -1 && prevDiamIndex + 1 < args.Length)
@@ -380,10 +426,10 @@ else
             prevDiam = int.Parse(args[prevDiamIndex + 1]);
         }
 
-        if (estimateIndex != -1 && estimateIndex + 1 < args.Length)
+        if (eIndex != -1 && eIndex + 1 < args.Length)
         {
             // On utilise l'estimation de graphs
-            int nbGraphs = int.Parse(args[estimateIndex + 1]);
+            int nbGraphs = int.Parse(args[eIndex + 1]);
             Benchmark.EstimateBiggestDiameterGraph(
                 nbGraphs,
                 n,

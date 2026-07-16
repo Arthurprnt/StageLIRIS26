@@ -108,31 +108,40 @@ public class GraphGenerator
         return graph;
     }
 
-    public static Graph GetPipeGraph()
+    public static List<Graph> GetPipeGraph()
     {
-        int i = 0;
-        bool continu = true;
+        int nbGraphs = 1;
 
-        Graph graph = new Graph(0, "PipeGraph");
+        List<Graph> graphs = new List<Graph>();
+        Graph currGraph = new Graph(0, "PipeGraph" + (nbGraphs++));
 
         foreach (string line in Benchmark.ReadFromPipeInput())
         {
-            if (line == "}")
-                continu = false;
-            if (i > 0 && continu)
+            if (line == "" && currGraph.NbVert > 0)
+            {
+                // On a fini de construire le graph en cours
+                currGraph.RebuildMat();
+                graphs.Add(currGraph);
+                currGraph = new Graph(0, "PipeGraph" + (nbGraphs++));
+            }
+            else if (line != "graph G {" && line != "}" && line != "")
             {
                 string[] lineSplit = line.Split('"');
                 int from = int.Parse(lineSplit[1]);
                 int to = int.Parse(lineSplit[3]);
-                while (graph.NbVert < from + 1 || graph.NbVert < to + 1)
+                while (currGraph.NbVert < from + 1 || currGraph.NbVert < to + 1)
                 {
-                    graph.AddVertex();
+                    currGraph.AddVertex();
                 }
-                graph.AddEdge(from, to);
+                currGraph.AddEdge(from, to);
             }
-            i++;
         }
-        graph.RebuildMat();
-        return graph;
+        // On oublie pas le dernier graph
+        if (currGraph.NbVert > 0)
+        {
+            currGraph.RebuildMat();
+            graphs.Add(currGraph);
+        }
+        return graphs;
     }
 }

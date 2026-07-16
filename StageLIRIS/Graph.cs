@@ -93,6 +93,13 @@ public class Graph
         return finalHash;
     }
 
+    private (int from, int to) GetRandomEdge()
+    {
+        int a = Random.Shared.Next(0, NbVert - 1);
+        int b = Random.Shared.Next(a + 1, NbVert);
+        return (a, b);
+    }
+
     public void WriteMat()
     {
         for (int i = 0; i < NbVert; i++)
@@ -561,7 +568,8 @@ public class Graph
         int k,
         char mode,
         char setType,
-        bool estimate = true
+        bool estimate = true,
+        int edgeLim = -1
     )
     {
         if (!IsMatSync)
@@ -570,19 +578,88 @@ public class Graph
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
         List<Graph> graphsFound = new List<Graph>();
 
-        for (int i = 0; i < NbVert; i++)
+        if (edgeLim == -1)
         {
-            for (int j = i + 1; j < NbVert; j++)
+            for (int i = 0; i < NbVert; i++)
             {
-                if (Mat[i][j] == 0)
+                for (int j = i + 1; j < NbVert; j++)
+                {
+                    if (Mat[i][j] == 0)
+                    {
+                        biggestDiam = TryWithEdge(
+                            k,
+                            mode,
+                            setType,
+                            estimate,
+                            i,
+                            j,
+                            graphsFound,
+                            biggestDiam
+                        );
+                    }
+                    else
+                    {
+                        // Il y a déjà une arête entre i et j
+                        int prevNbEdges = NbEdges;
+                        RemoveEdge(i, j);
+
+                        // On cherche juste en retirant l'arrête
+                        int tempDiam = GetDiamOfReconfig(k, mode, setType, estimate);
+                        if (tempDiam > biggestDiam)
+                        {
+                            graphsFound.Clear();
+                            graphsFound.Add(Clone());
+                            biggestDiam = tempDiam;
+                        }
+                        else if (tempDiam == biggestDiam)
+                        {
+                            graphsFound.Add(Clone());
+                        }
+
+                        for (int m = 0; m < NbVert; m++)
+                        {
+                            for (int l = m + 1; l < NbVert; l++)
+                            {
+                                if (!(m == i && l == j) && !(m == j && l == i) && Mat[m][l] == 0)
+                                {
+                                    biggestDiam = TryWithEdge(
+                                        k,
+                                        mode,
+                                        setType,
+                                        estimate,
+                                        m,
+                                        l,
+                                        graphsFound,
+                                        biggestDiam
+                                    );
+                                }
+                            }
+                        }
+                        AddEdge(i, j);
+                    }
+                }
+            }
+        }
+        else
+        {
+            int edgesLeft = edgeLim;
+
+            HashSet<(int from, int to)> pairUsed = new HashSet<(int from, int to)>();
+            var currPair = GetRandomEdge();
+            while (edgesLeft > 0)
+            {
+                while (pairUsed.Contains(currPair))
+                    currPair = GetRandomEdge();
+                pairUsed.Add(currPair);
+                if (Mat[currPair.from][currPair.to] == 0)
                 {
                     biggestDiam = TryWithEdge(
                         k,
                         mode,
                         setType,
                         estimate,
-                        i,
-                        j,
+                        currPair.from,
+                        currPair.to,
                         graphsFound,
                         biggestDiam
                     );
@@ -591,7 +668,7 @@ public class Graph
                 {
                     // Il y a déjà une arête entre i et j
                     int prevNbEdges = NbEdges;
-                    RemoveEdge(i, j);
+                    RemoveEdge(currPair.from, currPair.to);
 
                     // On cherche juste en retirant l'arrête
                     int tempDiam = GetDiamOfReconfig(k, mode, setType, estimate);
@@ -606,27 +683,39 @@ public class Graph
                         graphsFound.Add(Clone());
                     }
 
-                    for (int m = 0; m < NbVert; m++)
+                    int dualEdgesLeft = edgeLim;
+                    HashSet<(int from, int to)> dualPairUsed = new HashSet<(int from, int to)>();
+                    var dualCurrPair = GetRandomEdge();
+                    while (dualEdgesLeft > 0)
                     {
-                        for (int l = m + 1; l < NbVert; l++)
+                        while (dualPairUsed.Contains(dualCurrPair))
+                            dualCurrPair = GetRandomEdge();
+                        dualPairUsed.Add(dualCurrPair);
+
+                        if (
+                            !(dualCurrPair.from == currPair.from && dualCurrPair.to == currPair.to)
+                            && !(
+                                dualCurrPair.from == currPair.to && dualCurrPair.to == currPair.from
+                            )
+                            && Mat[dualCurrPair.from][dualCurrPair.to] == 0
+                        )
                         {
-                            if (!(m == i && l == j) && !(m == j && l == i) && Mat[m][l] == 0)
-                            {
-                                biggestDiam = TryWithEdge(
-                                    k,
-                                    mode,
-                                    setType,
-                                    estimate,
-                                    m,
-                                    l,
-                                    graphsFound,
-                                    biggestDiam
-                                );
-                            }
+                            biggestDiam = TryWithEdge(
+                                k,
+                                mode,
+                                setType,
+                                estimate,
+                                dualCurrPair.from,
+                                dualCurrPair.to,
+                                graphsFound,
+                                biggestDiam
+                            );
                         }
+                        dualEdgesLeft--;
                     }
-                    AddEdge(i, j);
+                    AddEdge(currPair.from, currPair.to);
                 }
+                edgesLeft--;
             }
         }
 
@@ -638,28 +727,31 @@ public class Graph
         int k,
         char mode,
         char setType,
-        bool estimate = true
+        bool estimate = true,
+        int lim = -1,
+        int edgeLim = -1
     )
     {
         int tryLeft = depth - 1;
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
-        List<Graph> graCollection = SearchLocally(k, mode, setType, estimate).graphs;
+        List<Graph> graCollection = SearchLocally(k, mode, setType, estimate, edgeLim).graphs;
         List<Graph> graFound = new List<Graph>();
         List<int> graStocked = new List<int>();
         while (tryLeft > 0)
-        {
-            graStocked.Clear();
+        { 
             for (int i = 0; i < graCollection.Count(); i++)
             {
                 graFound.AddRange(
-                    graCollection[i].SearchLocally(k, mode, setType, estimate).graphs
+                    graCollection[i].SearchLocally(k, mode, setType, estimate, edgeLim).graphs
                 );
             }
-            graCollection.Clear();
+            //graCollection.Clear();
             //int biggestDiam = graFound[0].GetDiamOfReconfig(k, mode, setType, estimate);
             //graCollection.Add(graFound[0]);
+            graStocked.Clear();
             for (int i = 1; i < graFound.Count(); i++)
             {
+                // Triage des graphes avec le meilleur diamètre de reconfig
                 if (graStocked.Contains(graFound[i].GetHashCode()))
                     continue;
                 int tempDiam = graFound[i].GetDiamOfReconfig(k, mode, setType, estimate);
@@ -667,7 +759,7 @@ public class Graph
                 {
                     graCollection.Clear();
                     graCollection.Add(graFound[i]);
-                    graStocked.Add(graFound[i].GetHashCode());
+                    //graStocked.Add(graFound[i].GetHashCode());
                     biggestDiam = tempDiam;
                 }
                 else if (tempDiam == biggestDiam)
@@ -676,6 +768,9 @@ public class Graph
                     graStocked.Add(graFound[i].GetHashCode());
                 }
             }
+            if(graCollection.Count() == 0) throw new Exception("pas de graphes2");
+            if (lim > 0 && graCollection.Count() > lim && tryLeft > 1)
+                graCollection = graCollection[..lim];
             //graCollection = [..graFound];
             graFound.Clear();
             tryLeft--;

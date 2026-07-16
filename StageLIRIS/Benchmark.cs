@@ -139,7 +139,14 @@ public class Benchmark
                     + maxDiam
             );
         else
-            Console.Write(graphs[0].ToDot());
+        {
+            for (int i = 0; i < graphs.Count(); i++)
+            {
+                if (i > 0)
+                    Console.WriteLine();
+                Console.Write(graphs[i].ToDot());
+            }
+        }
 
         string setTypeString = "";
         if (setType == 'I')
@@ -271,7 +278,7 @@ public class Benchmark
             + n
             + " "
             + nbGraphs
-            + " | /bin/pickg -c1 -e"
+            + " | /bin/pickg -c1: -e"
             + (n - 1)
             + ":"
             + (n * (n - 1) / 2 - k * (k - 1) / 2 - (k - 1) * prevBiggestDiam)
