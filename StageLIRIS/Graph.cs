@@ -735,8 +735,10 @@ public class Graph
         int tryLeft = depth - 1;
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
         List<Graph> graCollection = SearchLocally(k, mode, setType, estimate, edgeLim).graphs;
-        if (lim > 0 && graCollection.Count() > lim && tryLeft > 1)
-            graCollection = graCollection[..lim];
+        if (lim > 0 && graCollection.Count() > lim && tryLeft > 1) {
+          graCollection.Shuffle();
+          graCollection = graCollection[..lim];
+        }
         List<Graph> graFound = new List<Graph>();
         List<int> graStocked = new List<int>();
         while (tryLeft > 0)
@@ -772,8 +774,10 @@ public class Graph
             }
             if (graCollection.Count() == 0)
                 throw new Exception("pas de graphes2");
-            if (lim > 0 && graCollection.Count() > lim && tryLeft > 1)
-                graCollection = graCollection[..lim];
+            if (lim > 0 && graCollection.Count() > lim && tryLeft > 1) {
+              graCollection.Shuffle();
+              graCollection = graCollection[..lim];
+            }
             //graCollection = [..graFound];
             graFound.Clear();
             tryLeft--;
