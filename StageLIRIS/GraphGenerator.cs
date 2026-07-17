@@ -82,32 +82,6 @@ public class GraphGenerator
         return graph;
     }
 
-    public static Graph GetListgGraph(string[] lines)
-    {
-        // Génère un graphe à partir d'un fichier output.txt généré par listg
-        // Pioche le graphe qui se situe entre les lignes startLine et endLine
-
-        // Données graph
-        int nbVertices = lines.Length;
-
-        Graph graph = new Graph(nbVertices);
-
-        // Traitement des aretes
-        for (int i = 0; i < nbVertices; i++)
-        {
-            int from = int.Parse(lines[i].Split(" : ")[0].Replace(" ", ""));
-            string[] toList = lines[i].Split(" : ")[1].Split(" ");
-
-            for (int j = 0; j < toList.Length; j++)
-            {
-                int to = int.Parse(toList[j].Replace(";", ""));
-                graph.AddEdge(from, to);
-            }
-        }
-
-        return graph;
-    }
-
     public static List<Graph> GetPipeGraph()
     {
         int nbGraphs = 1;

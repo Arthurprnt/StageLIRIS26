@@ -735,10 +735,12 @@ public class Graph
         int tryLeft = depth - 1;
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
         List<Graph> graCollection = SearchLocally(k, mode, setType, estimate, edgeLim).graphs;
+        if (lim > 0 && graCollection.Count() > lim && tryLeft > 1)
+            graCollection = graCollection[..lim];
         List<Graph> graFound = new List<Graph>();
         List<int> graStocked = new List<int>();
         while (tryLeft > 0)
-        { 
+        {
             for (int i = 0; i < graCollection.Count(); i++)
             {
                 graFound.AddRange(
@@ -768,7 +770,8 @@ public class Graph
                     graStocked.Add(graFound[i].GetHashCode());
                 }
             }
-            if(graCollection.Count() == 0) throw new Exception("pas de graphes2");
+            if (graCollection.Count() == 0)
+                throw new Exception("pas de graphes2");
             if (lim > 0 && graCollection.Count() > lim && tryLeft > 1)
                 graCollection = graCollection[..lim];
             //graCollection = [..graFound];

@@ -14,6 +14,11 @@ Vers linux:
     dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 Vers windobe:
     dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+Vers macos:
+    Pour les macs sous arm:
+      dotnet publish -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true
+    Pour les vieux macs (~avant 2020):
+      dotnet publish -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true
 */
 
 static int ShowUsages()
@@ -61,7 +66,7 @@ static int ShowManual()
     Console.WriteLine(
         "Upgrading usage: ./StageLIRIS upgrade -k <indep_size> -a <alpha> -b <beta> -f <file_path> -t <file_type>"
     );
-    Console.WriteLine("Parameters:");
+    Console.WriteLine("\nParameters:");
     Console.WriteLine(
         "reconfig: Reconfig the given graph and provide the dot for reconfigured graph."
     );
@@ -131,14 +136,18 @@ if (reconfigIndex == -1)
 int searchIndex = Array.IndexOf(args, "search");
 if (searchIndex == -1)
     searchIndex = Array.IndexOf(args, "s");
-int upIndex = Array.IndexOf(args, "updrade");
+int upIndex = Array.IndexOf(args, "upgrade");
 if (upIndex == -1)
     upIndex = Array.IndexOf(args, "u");
 
 // Variables parameters
+bool calcDiam = false;
 int calcIndex = Array.IndexOf(args, "-c");
+if (calcIndex != -1)
+    calcDiam = true;
 int eIndex = Array.IndexOf(args, "-e");
 int fileIndex = Array.IndexOf(args, "-f");
+string file = "";
 int helpIndex = Array.IndexOf(args, "-h");
 if (helpIndex != -1)
     return ShowManual();
@@ -150,42 +159,15 @@ int modeIndex = Array.IndexOf(args, "-m");
 int nIndex = Array.IndexOf(args, "-n");
 int setTypeIndex = Array.IndexOf(args, "-s");
 int fileTypeIndex = Array.IndexOf(args, "-t");
+string[] possibleTypes = { "dot", "hog", "gra" };
+string fileType = args[fileTypeIndex + 1];
 
-Stopwatch stopwatch = new Stopwatch();
-stopwatch.Start();
-
-if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
+List<Graph> GetGraphs(string file = "")
 {
-    int nbUsed = 0;
-    if (upIndex != -1)
-        nbUsed++;
-    if (reconfigIndex != -1)
-        nbUsed++;
-    if (searchIndex != -1)
-        nbUsed++;
-
-    if (nbUsed > 1)
-        return ShowErrorMultiParam();
-
-    if (!(fileIndex != -1 && fileIndex + 1 < args.Length) && !usePipeInput)
-        return ShowError("f");
-
-    string file = args[fileIndex + 1];
-    if (!File.Exists(file) && !usePipeInput)
-        return ShowError("f");
-
-    if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
-        return ShowError("t");
-
-    string types = args[fileTypeIndex + 1].ToLower();
-    string[] possibleTypes = { "dot", "hog", "gra" };
-    if (!possibleTypes.Contains(types) && !usePipeInput)
-        return ShowError("t");
-
     List<Graph> graphes = new List<Graph>();
     if (!usePipeInput)
     {
-        switch (types)
+        switch (fileType)
         {
             case "dot":
                 graphes.Add(GraphGenerator.GetDotGraph(file));
@@ -207,58 +189,160 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
             Environment.Exit(1);
         }
     }
+    return graphes;
+}
 
+int nbModeUsed = 0;
+if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
+{
     if (upIndex != -1)
+        nbModeUsed++;
+    if (reconfigIndex != -1)
+        nbModeUsed++;
+    if (searchIndex != -1)
+        nbModeUsed++;
+
+    if (nbModeUsed > 1)
+        return ShowErrorMultiParam();
+}
+
+Stopwatch stopwatch = new Stopwatch();
+stopwatch.Start();
+
+if (upIndex == -1)
+{
+    if (modeIndex == -1 || modeIndex + 1 >= args.Length)
+        return ShowError("m");
+    char mode = char.Parse(args[modeIndex + 1]);
+
+    if (setTypeIndex == -1 || setTypeIndex + 1 >= args.Length)
+        return ShowError("s");
+    char setType = char.Parse(args[setTypeIndex + 1]);
+
+    if (nbModeUsed == 0)
     {
-        // Using the upgrading mode
-        int alphaIndex = Array.IndexOf(args, "-a");
-        if (!(alphaIndex != -1 && alphaIndex + k < args.Length))
-            return ShowError("a");
+        // Using the default mode
+        if (nIndex == -1 || nIndex + 1 >= args.Length)
+            return ShowError("n");
+        int n = int.Parse(args[nIndex + 1]);
 
-        int betaIndex = Array.IndexOf(args, "-b");
-        if (!(betaIndex != -1 && betaIndex + k < args.Length))
-            return ShowError("b");
-
-        IndepSet alpha = new IndepSet(graphes[0], k);
-        IndepSet beta = new IndepSet(graphes[0], k);
-        for (int i = 1; i <= k; i++)
+        if ((fileIndex != -1 && fileIndex + 1 < args.Length) || usePipeInput)
         {
-            alpha.AddVert(int.Parse(args[alphaIndex + i]));
-            beta.AddVert(int.Parse(args[betaIndex + i]));
-        }
-        Graph upgradedGraph = graphes[0].UpgradeGraph(alpha, beta);
-        if (useVerb)
-            Console.WriteLine("Graphe amélioré:");
-        Console.WriteLine(upgradedGraph.ToDot());
-        if (useVerb)
-            Console.WriteLine("Nouveau alpha:");
-        alpha.Write();
-        if (useVerb)
-            Console.WriteLine("Nouveau beta:");
-        beta.Write();
-    }
-    else
-    {
-        if (!(kIndex != -1 && kIndex + 1 < args.Length))
-            return ShowError("k");
+            // Using existing graphs
+            if (fileIndex == -1)
+                file = "Nameless";
 
-        if (!(modeIndex != -1 && modeIndex + 1 < args.Length))
-            return ShowError("m");
+            if (!usePipeInput && (fileIndex == -1 || fileIndex + 1 >= args.Length))
+                return ShowError("f");
+            else
+                file = args[fileIndex + 1];
+            if (!usePipeInput && !File.Exists(file))
+                return ShowError("f");
+            if (
+                !usePipeInput
+                && (
+                    fileTypeIndex == -1
+                    || fileTypeIndex + 1 >= args.Length
+                    || !possibleTypes.Contains(fileType)
+                )
+            )
+                return ShowError("t");
 
-        if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length))
-            return ShowError("s");
-        char setType = char.Parse(args[setTypeIndex + 1]);
+            List<Graph> graphs = GetGraphs(file);
 
-        char mode = char.Parse(args[modeIndex + 1]);
-
-        if (reconfigIndex != -1)
-        {
-            // Using the reconfiguration mode
-            for (int i = 0; i < graphes.Count(); i++)
+            for (int i = 0; i < graphs.Count(); i++)
             {
                 if (i > 0)
                     Console.WriteLine();
-                GraphReconfig graphReconfig = new GraphReconfig(graphes[i], k, mode, setType);
+                GraphReconfig reconfig = new GraphReconfig(graphs[i], k, mode, setType);
+                reconfig.CalcAllSetsIte();
+                if (useVerb)
+                {
+                    if (calcDiam)
+                        Console.WriteLine(
+                            "Diamètre calculé du graphe de reconfig pour "
+                                + file
+                                + $": "
+                                + reconfig.Reconfig.GetDiameter()
+                        );
+                    else
+                        Console.WriteLine(
+                            "Diamètre estimé du graphe de reconfig pour "
+                                + file
+                                + $": "
+                                + reconfig.Reconfig.EstimateDiameter()
+                        );
+                }
+                else
+                {
+                    if (calcDiam)
+                        Console.WriteLine(reconfig.Reconfig.GetDiameter());
+                    else
+                        Console.WriteLine(reconfig.Reconfig.EstimateDiameter());
+                }
+            }
+        }
+        else
+        {
+            // Pas de file
+            int prevDiam = 0;
+            int prevDiamIndex = Array.IndexOf(args, "-p");
+            if (prevDiamIndex != -1 && prevDiamIndex + 1 < args.Length)
+            {
+                prevDiam = int.Parse(args[prevDiamIndex + 1]);
+            }
+
+            if (eIndex != -1 && eIndex + 1 < args.Length)
+            {
+                // On utilise l'estimation de graphs
+                int nbGraphs = int.Parse(args[eIndex + 1]);
+                Benchmark.EstimateBiggestDiameterGraph(
+                    nbGraphs,
+                    n,
+                    k,
+                    mode,
+                    setType,
+                    !calcDiam,
+                    prevDiam
+                );
+            }
+            else
+            {
+                // On trouve tous les graphes respectant le critère demandé
+                Benchmark.GetBiggestDiameterGraph(n, k, mode, setType, !calcDiam, prevDiam);
+            }
+        }
+    }
+    else
+    {
+        // A specific mode is used
+        // So graphs must be provided
+        if (!usePipeInput && (fileIndex == -1 || fileIndex + 1 >= args.Length))
+            return ShowError("f");
+        else
+            file = args[fileIndex + 1];
+        if (!usePipeInput && !File.Exists(file))
+            return ShowError("f");
+        if (
+            !usePipeInput
+            && (
+                fileTypeIndex == -1
+                || fileTypeIndex + 1 >= args.Length
+                || !possibleTypes.Contains(fileType)
+            )
+        )
+            return ShowError("t");
+
+        List<Graph> graphs = GetGraphs(file);
+
+        if (reconfigIndex != -1)
+        {
+            // Using the reconfig mode
+            for (int i = 0; i < graphs.Count(); i++)
+            {
+                if (i > 0)
+                    Console.WriteLine();
+                GraphReconfig graphReconfig = new GraphReconfig(graphs[i], k, mode, setType);
                 graphReconfig.CalcAllSetsIte();
                 if (useVerb)
                     Console.WriteLine("Graphe reconfiguré du graphe " + file + ":");
@@ -271,33 +355,27 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
         {
             // Using the local search mode
             int depthIndex = Array.IndexOf(args, "-d");
-            if (!(depthIndex != -1 && depthIndex + 1 < args.Length))
+            if (depthIndex == -1 || depthIndex + 1 >= args.Length)
                 return ShowError("d");
 
             int edgeLimit = -1;
             if (eIndex != -1 && eIndex + 1 < args.Length)
                 edgeLimit = int.Parse(args[eIndex + 1]);
 
-            int d = int.Parse(args[depthIndex + 1]);
+            int depth = int.Parse(args[depthIndex + 1]);
 
             int lim = -1;
             int limIndex = Array.IndexOf(args, "-l");
             if (limIndex != -1 && limIndex + 1 < args.Length)
                 lim = int.Parse(args[limIndex + 1]);
 
-            bool calcDiam = false;
-            if (calcIndex != -1)
-            {
-                calcDiam = true;
-            }
-
             int biggestDiam = -1;
             List<Graph> bestGraphs = new List<Graph>();
 
-            for (int i = 0; i < graphes.Count(); i++)
+            for (int i = 0; i < graphs.Count(); i++)
             {
-                var resDeepSearch = graphes[i]
-                    .DeepSearchLocally(d, k, mode, setType, !calcDiam, lim, edgeLimit);
+                var resDeepSearch = graphs[i]
+                    .DeepSearchLocally(depth, k, mode, setType, !calcDiam, lim, edgeLimit);
                 if (resDeepSearch.diameter > biggestDiam)
                 {
                     biggestDiam = resDeepSearch.diameter;
@@ -324,128 +402,49 @@ if (upIndex != -1 || reconfigIndex != -1 || searchIndex != -1)
 }
 else
 {
-    if (!(modeIndex != -1 && modeIndex + 1 < args.Length))
-        return ShowError("m");
-
-    char mode = char.Parse(args[modeIndex + 1]);
-    if (!(nIndex != -1 && nIndex + 1 < args.Length))
-        return ShowError("n");
-
-    int n = int.Parse(args[nIndex + 1]);
-
-    if (!(setTypeIndex != -1 && setTypeIndex + 1 < args.Length))
-        return ShowError("s");
-    char setType = char.Parse(args[setTypeIndex + 1]);
-
-    bool calcDiam = false;
-    if (calcIndex != -1)
-    {
-        calcDiam = true;
-    }
-    if ((fileIndex != -1 && fileIndex + 1 < args.Length) || usePipeInput)
-    {
-        string file = args[fileIndex + 1];
-        if (fileIndex == -1)
-            file = "Nameless";
-        if (!File.Exists(file) && !usePipeInput)
-            return ShowError("f");
-
-        if (!(fileTypeIndex != -1 && fileTypeIndex + 1 < args.Length) && !usePipeInput)
-            return ShowError("t");
-
-        string types = args[fileTypeIndex + 1].ToLower();
-        string[] possibleTypes = { "dot", "hog", "gra" };
-        if (!possibleTypes.Contains(types) && !usePipeInput)
-            return ShowError("t");
-
-        List<Graph> graphes = new List<Graph>();
-        if (!usePipeInput)
-        {
-            switch (types)
-            {
-                case "dot":
-                    graphes.Add(GraphGenerator.GetDotGraph(file));
-                    break;
-                case "hog":
-                    graphes.Add(GraphGenerator.GetHogGraph(file));
-                    break;
-                case "gra":
-                    graphes.Add(GraphGenerator.GetGraGraph(file));
-                    break;
-            }
-        }
-        else
-        {
-            graphes = GraphGenerator.GetPipeGraph();
-            if (graphes.Count() == 0)
-            {
-                Console.Error.WriteLine("No graph was found in the pipe. Aborting...\n");
-                Environment.Exit(1);
-            }
-        }
-
-        for (int i = 0; i < graphes.Count(); i++)
-        {
-            if (i > 0)
-                Console.WriteLine();
-            GraphReconfig reconfig = new GraphReconfig(graphes[i], k, mode, setType);
-            reconfig.CalcAllSetsIte();
-            if (useVerb)
-            {
-                if (calcDiam)
-                    Console.WriteLine(
-                        "Diamètre calculé du graphe de reconfig pour "
-                            + file
-                            + $": "
-                            + reconfig.Reconfig.GetDiameter()
-                    );
-                else
-                    Console.WriteLine(
-                        "Diamètre estimé du graphe de reconfig pour "
-                            + file
-                            + $": "
-                            + reconfig.Reconfig.EstimateDiameter()
-                    );
-            }
-            else
-            {
-                if (calcDiam)
-                    Console.WriteLine(reconfig.Reconfig.GetDiameter());
-                else
-                    Console.WriteLine(reconfig.Reconfig.EstimateDiameter());
-            }
-        }
-    }
+    // Using the upgrading mode
+    if (!usePipeInput && (fileIndex == -1 || fileIndex + 1 >= args.Length))
+        return ShowError("f");
     else
-    {
-        // Pas de file
-        int prevDiam = 0;
-        int prevDiamIndex = Array.IndexOf(args, "-p");
-        if (prevDiamIndex != -1 && prevDiamIndex + 1 < args.Length)
-        {
-            prevDiam = int.Parse(args[prevDiamIndex + 1]);
-        }
+        file = args[fileIndex + 1];
+    if (!usePipeInput && !File.Exists(file))
+        return ShowError("f");
+    if (
+        !usePipeInput
+        && (
+            fileTypeIndex == -1
+            || fileTypeIndex + 1 >= args.Length
+            || !possibleTypes.Contains(fileType)
+        )
+    )
+        return ShowError("t");
+    List<Graph> graphs = GetGraphs(file);
 
-        if (eIndex != -1 && eIndex + 1 < args.Length)
-        {
-            // On utilise l'estimation de graphs
-            int nbGraphs = int.Parse(args[eIndex + 1]);
-            Benchmark.EstimateBiggestDiameterGraph(
-                nbGraphs,
-                n,
-                k,
-                mode,
-                setType,
-                !calcDiam,
-                prevDiam
-            );
-        }
-        else
-        {
-            // On trouve tous les graphes respectant le critère demandé
-            Benchmark.GetBiggestDiameterGraph(n, k, mode, setType, !calcDiam, prevDiam);
-        }
+    int alphaIndex = Array.IndexOf(args, "-a");
+    if (!(alphaIndex != -1 && alphaIndex + k < args.Length))
+        return ShowError("a");
+
+    int betaIndex = Array.IndexOf(args, "-b");
+    if (!(betaIndex != -1 && betaIndex + k < args.Length))
+        return ShowError("b");
+
+    IndepSet alpha = new IndepSet(graphs[0], k);
+    IndepSet beta = new IndepSet(graphs[0], k);
+    for (int i = 1; i <= k; i++)
+    {
+        alpha.AddVert(int.Parse(args[alphaIndex + i]));
+        beta.AddVert(int.Parse(args[betaIndex + i]));
     }
+    Graph upgradedGraph = graphs[0].UpgradeGraph(alpha, beta);
+    if (useVerb)
+        Console.WriteLine("Graphe amélioré:");
+    Console.WriteLine(upgradedGraph.ToDot());
+    if (useVerb)
+        Console.WriteLine("Nouveau alpha:");
+    alpha.Write();
+    if (useVerb)
+        Console.WriteLine("Nouveau beta:");
+    beta.Write();
 }
 
 stopwatch.Stop();

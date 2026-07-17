@@ -86,44 +86,47 @@ public class Benchmark
         // Ecrit les graphes trouvés dans le fichier graphs_found/n<n>k<k>.txt
         bool useVerb = !Console.IsOutputRedirected;
         List<Graph> graphs = new List<Graph>();
+        Graph currGraph = new Graph(0, "NoName");
         int maxDiam = 0;
 
-        int ind = 1;
         int nbLignes = File.ReadLines(file).Count();
 
         bool readingEdges = false;
         int nbVert = 0;
-        int vertsDone = 0;
-        string[] graphLines = new string[0];
+        int nbEdges = 0;
+        int edgesDone = 0;
 
         foreach (string line in File.ReadLines(file))
         {
-            if (!readingEdges)
+            if (!readingEdges && line != "")
             {
-                nbVert = int.Parse(line);
-                vertsDone = 0;
+                string[] parsedLine = line.Split(" ");
+                nbVert = int.Parse(parsedLine[2]);
+                nbEdges = int.Parse(parsedLine[3]);
+                edgesDone = 0;
                 readingEdges = true;
-                graphLines = new string[nbVert];
+                currGraph = new Graph(nbVert, ("graph_" + nbVert + "_" + nbEdges));
             }
-            else
+            else if (readingEdges)
             {
-                graphLines[vertsDone] = line;
-                vertsDone++;
-                if (vertsDone == nbVert)
+                string[] parsedLine = line.Split(" ");
+                int from = int.Parse(parsedLine[1]) - 1;
+                int to = int.Parse(parsedLine[2]) - 1;
+                currGraph.AddEdge(from, to);
+                edgesDone++;
+                if (edgesDone == nbEdges)
                 {
-                    Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-                    int diameter = GetDiamOfIsGraph(graphe, k, mode, setType, estimate);
+                    int diameter = GetDiamOfIsGraph(currGraph, k, mode, setType, estimate);
                     if (diameter > maxDiam)
                     {
-                        graphs = new List<Graph>();
-                        graphs.Add(graphe);
+                        graphs.Clear();
+                        graphs.Add(currGraph);
                         maxDiam = diameter;
                     }
                     else if (diameter == maxDiam)
                     {
-                        graphs.Add(graphe);
+                        graphs.Add(currGraph);
                     }
-                    ind += nbVert + 1;
                     readingEdges = false;
                 }
             }
@@ -230,7 +233,7 @@ public class Benchmark
         );
         RunCommand(
             "/bin/listg",
-            " -q temp/code" + timestamp + ".txt temp/output" + timestamp + ".txt"
+            " -q -b temp/code" + timestamp + ".txt temp/output" + timestamp + ".txt"
         );
         int currDiam = CalcBiggestDiameter(
             "temp/output" + timestamp + ".txt",
@@ -288,7 +291,7 @@ public class Benchmark
         RunCommand("/bin/bash", $"-c \"{commande}\"");
         RunCommand(
             "/bin/listg",
-            " -q temp/code" + timestamp + ".g6 temp/output" + timestamp + ".txt"
+            " -q -b temp/code" + timestamp + ".g6 temp/output" + timestamp + ".txt"
         );
         int currDiam = CalcBiggestDiameter(
             "temp/output" + timestamp + ".txt",
@@ -342,30 +345,35 @@ public class Benchmark
         RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
 
         int idGraph = 0;
+        Graph currGraph = new Graph(0, "Graph" + idGraph);
 
         bool readingEdges = false;
         int nbVert = 0;
-        int vertsDone = 0;
-        string[] graphLines = new string[0];
+        int nbEdges = 0;
+        int edgesDone = 0;
 
         foreach (string line in File.ReadLines("temp/output.txt"))
         {
             if (!readingEdges)
             {
-                nbVert = int.Parse(line);
-                vertsDone = 0;
+                string[] parsedLine = line.Split(" ");
+                nbVert = int.Parse(parsedLine[2]);
+                nbEdges = int.Parse(parsedLine[3]);
+                edgesDone = 0;
                 readingEdges = true;
-                graphLines = new string[nbVert];
+                currGraph = new Graph(nbVert, ("graph_" + nbVert + "_" + nbEdges));
             }
             else
             {
-                graphLines[vertsDone] = line;
-                vertsDone++;
-                if (vertsDone == nbVert)
+                string[] parsedLine = line.Split(" ");
+                int from = int.Parse(parsedLine[1]) - 1;
+                int to = int.Parse(parsedLine[2]) - 1;
+                currGraph.AddEdge(from, to);
+                edgesDone++;
+                if (edgesDone == nbEdges)
                 {
                     Console.WriteLine("id graph: " + idGraph);
-                    Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-                    Coloration coloration = new Coloration(graphe);
+                    Coloration coloration = new Coloration(currGraph);
                     //Console.WriteLine(idGraph);
                     //Console.WriteLine("Graphe:");
                     //graphe.WriteVois();
@@ -377,11 +385,6 @@ public class Benchmark
                     {
                         coloration.BrutForceColoration();
                     }
-                    /*Console.WriteLine("Graphe:");
-                    graphe.WriteVois();
-                    Console.WriteLine("Coloration:");
-                    coloration.WriteCol();
-                    Console.WriteLine("\n\n");*/
                     readingEdges = false;
                     idGraph++;
                 }
@@ -434,29 +437,34 @@ public class Benchmark
             RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
 
             int idGraph = 0;
+            Graph currGraph = new Graph(0, "Graph"+idGraph);
 
             bool readingEdges = false;
             int nbVert = 0;
-            int vertsDone = 0;
-            string[] graphLines = new string[0];
+            int nbEdges = 0;
+            int edgesDone = 0;
 
             foreach (string line in File.ReadLines("temp/output.txt"))
             {
                 if (!readingEdges)
                 {
-                    nbVert = int.Parse(line);
-                    vertsDone = 0;
+                    string[] parsedLine = line.Split(" ");
+                    nbVert = int.Parse(parsedLine[2]);
+                    nbEdges = int.Parse(parsedLine[3]);
+                    edgesDone = 0;
                     readingEdges = true;
-                    graphLines = new string[nbVert];
+                    currGraph = new Graph(nbVert, ("graph_" + nbVert + "_" + nbEdges));
                 }
                 else
                 {
-                    graphLines[vertsDone] = line;
-                    vertsDone++;
-                    if (vertsDone == nbVert)
+                    string[] parsedLine = line.Split(" ");
+                    int from = int.Parse(parsedLine[1]) - 1;
+                    int to = int.Parse(parsedLine[2]) - 1;
+                    currGraph.AddEdge(from, to);
+                    edgesDone++;
+                    if (edgesDone == nbVert)
                     {
-                        Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-                        Coloration coloration = new Coloration(graphe);
+                        Coloration coloration = new Coloration(currGraph);
                         //Console.WriteLine(idGraph);
                         try
                         {
@@ -509,33 +517,37 @@ public class Benchmark
         RunCommand("/bin/listg", " -q temp/code.txt temp/output.txt");
 
         int idGraph = 0;
+        Graph currGraph = new Graph(0, "Graph" + idGraph);
 
         bool readingEdges = false;
         int nbVert = 0;
-        int vertsDone = 0;
-        string[] graphLines = new string[0];
+        int nbEdges = 0;
+        int edgesDone = 0;
 
         foreach (string line in File.ReadLines("temp/output.txt"))
         {
             if (!readingEdges)
             {
-                nbVert = int.Parse(line);
-                vertsDone = 0;
+                string[] parsedLine = line.Split(" ");
+                nbVert = int.Parse(parsedLine[2]);
+                nbEdges = int.Parse(parsedLine[3]);
+                edgesDone = 0;
                 readingEdges = true;
-                graphLines = new string[nbVert];
+                currGraph = new Graph(nbVert, ("graph_" + nbVert + "_" + nbEdges));
             }
             else
             {
-                graphLines[vertsDone] = line;
-                vertsDone++;
-                if (vertsDone == nbVert)
+                string[] parsedLine = line.Split(" ");
+                int from = int.Parse(parsedLine[1]) - 1;
+                int to = int.Parse(parsedLine[2]) - 1;
+                currGraph.AddEdge(from, to);
+                edgesDone++;
+                if (edgesDone == nbVert)
                 {
                     Console.WriteLine("id graph: " + idGraph);
-                    Graph graphe = GraphGenerator.GetListgGraph(graphLines);
-
                     Console.WriteLine("Graphe:");
-                    graphe.WriteVois();
-                    Console.WriteLine("Nb triangle: " + graphe.CountTriangles());
+                    currGraph.WriteVois();
+                    Console.WriteLine("Nb triangle: " + currGraph.CountTriangles());
                     Console.WriteLine("\n\n");
 
                     readingEdges = false;
