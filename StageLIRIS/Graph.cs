@@ -441,6 +441,7 @@ public class Graph
 
     public int CountTriangles()
     {
+        //Renvoie le nombre de triangles présents dans le graphe
         int somme = 0;
         for (int i = 0; i < NbVert; i++)
         {
@@ -545,6 +546,7 @@ public class Graph
         int biggestDiam
     )
     {
+        // Test la configuration où ajoute une arête entre i et j
         AddEdge(i, j);
         int bigDiam = biggestDiam;
         int tempDiam = GetDiamOfReconfig(k, mode, setType, estimate);
@@ -558,6 +560,7 @@ public class Graph
         {
             listOfGra.Add(Clone());
         }
+        // On restore l'état de base
         RemoveEdge(i, j);
         if (Mat[i][j] > 0)
             throw new Exception("err de replacement d'arete");
@@ -572,6 +575,7 @@ public class Graph
         int edgeLim = -1
     )
     {
+        // Correspond à une profondeur de la méthode DeepSearchLocally
         if (!IsMatSync)
             throw new Exception("The matrice must be syncronised to search locally.");
 
@@ -580,6 +584,7 @@ public class Graph
 
         if (edgeLim == -1)
         {
+            // On vérifie l'échange pour toutes les paires de sommets
             for (int i = 0; i < NbVert; i++)
             {
                 for (int j = i + 1; j < NbVert; j++)
@@ -616,6 +621,7 @@ public class Graph
                             graphsFound.Add(Clone());
                         }
 
+                        // On la remplace pour toutes les arêtes possibles
                         for (int m = 0; m < NbVert; m++)
                         {
                             for (int l = m + 1; l < NbVert; l++)
@@ -642,6 +648,7 @@ public class Graph
         }
         else
         {
+            // On n'échange qu'avec edgeLim paires de sommets
             int edgesLeft = edgeLim;
 
             HashSet<(int from, int to)> pairUsed = new HashSet<(int from, int to)>();
@@ -683,6 +690,7 @@ public class Graph
                         graphsFound.Add(Clone());
                     }
 
+                    // On essaye de remplacer l'arête avec edgeLim autre paires de sommets
                     int dualEdgesLeft = edgeLim;
                     HashSet<(int from, int to)> dualPairUsed = new HashSet<(int from, int to)>();
                     var dualCurrPair = GetRandomEdge();
@@ -734,54 +742,55 @@ public class Graph
     {
         int tryLeft = depth - 1;
         int biggestDiam = GetDiamOfReconfig(k, mode, setType, estimate);
-        List<Graph> graCollection = SearchLocally(k, mode, setType, estimate, edgeLim).graphs;
-        if (lim > 0 && graCollection.Count() > lim && tryLeft > 1) {
-          graCollection.Shuffle();
-          graCollection = graCollection[..lim];
+        List<Graph> prevGraphList = SearchLocally(k, mode, setType, estimate, edgeLim).graphs;
+        if (lim > 0 && prevGraphList.Count() > lim && tryLeft > 1)
+        {
+            // On shuffle pour garder lim graphes de manière aléatoire
+            prevGraphList.Shuffle();
+            prevGraphList = prevGraphList[..lim];
         }
-        List<Graph> graFound = new List<Graph>();
-        List<int> graStocked = new List<int>();
+        List<Graph> currGraphList = new List<Graph>();
+        List<int> graFoundMemory = new List<int>();
         while (tryLeft > 0)
         {
-            for (int i = 0; i < graCollection.Count(); i++)
+            // On cherche localement dans tous les graphes trouvés à la profondeur précédente
+            for (int i = 0; i < prevGraphList.Count(); i++)
             {
-                graFound.AddRange(
-                    graCollection[i].SearchLocally(k, mode, setType, estimate, edgeLim).graphs
+                currGraphList.AddRange(
+                    prevGraphList[i].SearchLocally(k, mode, setType, estimate, edgeLim).graphs
                 );
             }
-            //graCollection.Clear();
-            //int biggestDiam = graFound[0].GetDiamOfReconfig(k, mode, setType, estimate);
-            //graCollection.Add(graFound[0]);
-            graStocked.Clear();
-            for (int i = 1; i < graFound.Count(); i++)
+            graFoundMemory.Clear();
+            for (int i = 1; i < currGraphList.Count(); i++)
             {
                 // Triage des graphes avec le meilleur diamètre de reconfig
-                if (graStocked.Contains(graFound[i].GetHashCode()))
+                // On ne garde qu'eux
+                if (graFoundMemory.Contains(currGraphList[i].GetHashCode()))
                     continue;
-                int tempDiam = graFound[i].GetDiamOfReconfig(k, mode, setType, estimate);
+                int tempDiam = currGraphList[i].GetDiamOfReconfig(k, mode, setType, estimate);
                 if (tempDiam > biggestDiam)
                 {
-                    graCollection.Clear();
-                    graCollection.Add(graFound[i]);
-                    //graStocked.Add(graFound[i].GetHashCode());
+                    prevGraphList.Clear();
+                    prevGraphList.Add(currGraphList[i]);
+                    graFoundMemory.Add(currGraphList[i].GetHashCode());
                     biggestDiam = tempDiam;
                 }
                 else if (tempDiam == biggestDiam)
                 {
-                    graCollection.Add(graFound[i]);
-                    graStocked.Add(graFound[i].GetHashCode());
+                    prevGraphList.Add(currGraphList[i]);
+                    graFoundMemory.Add(currGraphList[i].GetHashCode());
                 }
             }
-            if (graCollection.Count() == 0)
-                throw new Exception("pas de graphes2");
-            if (lim > 0 && graCollection.Count() > lim && tryLeft > 1) {
-              graCollection.Shuffle();
-              graCollection = graCollection[..lim];
+            if (lim > 0 && prevGraphList.Count() > lim && tryLeft > 1)
+            {
+                // On shuffle pour garder lim graphes de manière aléatoire
+                prevGraphList.Shuffle();
+                prevGraphList = prevGraphList[..lim];
             }
-            //graCollection = [..graFound];
-            graFound.Clear();
+            //prevGraphList = [..currGraphList];
+            currGraphList.Clear();
             tryLeft--;
         }
-        return (biggestDiam, graCollection);
+        return (biggestDiam, prevGraphList);
     }
 }
